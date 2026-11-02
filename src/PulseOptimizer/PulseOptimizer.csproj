@@ -25,4 +25,8 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="PulseOptimizer.Tests" />
+  </ItemGroup>
+
 </Project>

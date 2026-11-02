@@ -36,7 +36,7 @@ public class Finding : Observable
 /// "Diagnose before tweaking": the checks from the research doc's Diagnostics section.
 /// Uses WMI class names (not localized perf-counter names) so checks work on any Windows language.
 /// </summary>
-public static class PcDiagnostics
+public static partial class PcDiagnostics
 {
     // ───────── USB drop-outs (gates the USB selective suspend tweak) ─────────
 
@@ -64,6 +64,14 @@ public static class PcDiagnostics
             ("Checking startup programs", StartupCount),
             ("Checking Microsoft Defender", Defender),
             ("Checking power plan", PowerPlan),
+            ("Checking which graphics chip drives your monitors", MonitorOnMotherboard),
+            ("Checking memory channels", MemoryChannels),
+            ("Checking which drives your games are on", GamesOnHardDrive),
+            ("Checking your network connection", NetworkConnection),
+            ("Checking laptop power and graphics", LaptopPowerAndGpu),
+            ("Checking Resizable BAR support", ResizableBar),
+            ("Checking windowed game optimizations", WindowedGameOptimizations),
+            ("Checking Memory Integrity", MemoryIntegrity),
         };
         var all = new List<Finding>();
         foreach (var (label, run) in checks)
