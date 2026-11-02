@@ -8,7 +8,6 @@ using Pulse.Ui;
 
 namespace Pulse.Pages;
 
-public record GameEntry(string Title, string Exe, ImageSource Icon);
 public record RunRow(string Label, string Side, string Avg, string Low, string Latency);
 public record ResultRow(string Metric, string Numbers, string Explanation);
 
@@ -18,17 +17,18 @@ public partial class MeasurePage : UserControl, IPage
     CancellationTokenSource _cts;
     bool _busy;
 
-    static readonly HashSet<string> NotGames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "explorer", "chrome", "msedge", "firefox", "opera", "brave", "discord", "steam", "steamwebhelper", "epicgameslauncher",
-        "PulseOptimizer", "ApplicationFrameHost", "TextInputHost", "SystemSettings", "Code", "devenv", "Spotify", "Taskmgr",
-        "WindowsTerminal", "cmd", "powershell", "notepad", "Claude", "obs64", "EADesktop", "Battle.net", "RiotClientUx", "Medal",
-    };
+    readonly System.Windows.Threading.DispatcherTimer _scan = new() { Interval = TimeSpan.FromSeconds(3) };
+    List<string> _installFolders;
+    int _runs = 5, _secs = 60;
 
     public MeasurePage()
     {
         InitializeComponent();
         TweakPick.ItemsSource = TweakCatalog.All.Where(t => t.Proof is ProofMetric.FrameTime or ProofMetric.Latency).ToList();
+        _scan.Tick += (_, _) => RefreshGames();
+        Loaded += (_, _) => { if (_test == null) _scan.Start(); };
+        Unloaded += (_, _) => _scan.Stop();
+        UpdatePlan();
     }
 
     public void OnShown(object parameter)
@@ -41,33 +41,48 @@ public partial class MeasurePage : UserControl, IPage
 
     // ───────── Setup ─────────
 
-    void RefreshGames_Click(object sender, RoutedEventArgs e) => RefreshGames();
+    bool _refreshing;
 
     async void RefreshGames()
     {
-        var games = await Task.Run(() =>
+        if (_refreshing || _test != null) return;
+        _refreshing = true;
+        try
         {
-            var list = new List<GameEntry>();
-            foreach (var p in Process.GetProcesses())
+            var games = await Task.Run(() =>
             {
-                try
-                {
-                    if (p.MainWindowHandle == IntPtr.Zero || string.IsNullOrWhiteSpace(p.MainWindowTitle)) continue;
-                    if (NotGames.Contains(p.ProcessName) || p.Id == Environment.ProcessId) continue;
-                    string path = null;
-                    try { path = p.MainModule?.FileName; } catch { /* protected (often anti-cheat) */ }
-                    list.Add(new GameEntry(p.MainWindowTitle, p.ProcessName + ".exe", Native.FileIcon(path)));
-                }
-                catch { }
-                finally { p.Dispose(); }
+                _installFolders ??= PcDiagnostics.GameInstallFolders();
+                return GameDetector.Find(_installFolders);
+            });
+            var keep = (GamePick.SelectedItem as GameEntry)?.Exe;
+            var current = (GamePick.ItemsSource as List<GameEntry>)?.Select(g => g.Exe) ?? Enumerable.Empty<string>();
+            if (!games.Select(g => g.Exe).SequenceEqual(current))
+            {
+                GamePick.ItemsSource = games;
+                GamePick.SelectedItem = games.FirstOrDefault(g => g.Exe == keep) ?? games.FirstOrDefault();
             }
-            return list.GroupBy(g => g.Exe).Select(g => g.First()).OrderBy(g => g.Title).ToList();
-        });
-        var keep = (GamePick.SelectedItem as GameEntry)?.Exe;
-        GamePick.ItemsSource = games;
-        GamePick.SelectedItem = games.FirstOrDefault(g => g.Exe == keep);
-        NoGames.Visibility = games.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        UpdateStart();
+            bool any = games.Count > 0;
+            GamePick.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+            WaitingBox.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+            UpdateStart();
+        }
+        finally { _refreshing = false; }
+    }
+
+    void ChangePlan_Click(object sender, RoutedEventArgs e) =>
+        PlanChips.Visibility = PlanChips.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+
+    void Mode_Checked(object sender, RoutedEventArgs e)
+    {
+        (_runs, _secs) = sender == ModeQuick ? (3, 60) : sender == ModeThorough ? (7, 75) : (5, 60);
+        UpdatePlan();
+    }
+
+    void UpdatePlan()
+    {
+        if (PlanText == null) return;
+        var minutes = (_runs * 2 + 1) * (_secs + 15) / 60.0;
+        PlanText.Text = $"{_runs} runs with the tweak off and {_runs} on, {_secs} s each (about {Math.Ceiling(minutes)} min)";
     }
 
     void Pick_Changed(object sender, SelectionChangedEventArgs e) => UpdateStart();
@@ -79,8 +94,7 @@ public partial class MeasurePage : UserControl, IPage
     {
         var t = (Tweak)TweakPick.SelectedItem;
         var g = (GameEntry)GamePick.SelectedItem;
-        int secs = Len60.IsChecked == true ? 60 : Len90.IsChecked == true ? 90 : 75;
-        int runs = Runs3.IsChecked == true ? 3 : Runs7.IsChecked == true ? 7 : 5;
+        int secs = _secs, runs = _runs;
         var total = (runs * 2 + 1) * (secs + 15) / 60.0;
         if (!await MainWindow.Instance.Confirm($"Test “{t.Title}” in {g.Title}?",
                 $"{runs * 2 + 1} runs of {secs} seconds, about {total:0} minutes including switching back and forth. " +
@@ -99,6 +113,7 @@ public partial class MeasurePage : UserControl, IPage
 
     void ShowRunning()
     {
+        _scan.Stop();
         SetupCard.Visibility = Visibility.Collapsed;
         ResultCard.Visibility = Visibility.Collapsed;
         RunCard.Visibility = Visibility.Visible;
@@ -150,7 +165,7 @@ public partial class MeasurePage : UserControl, IPage
         StepTitle.Text = n.WarmUp
             ? "Warm-up run (not counted) · tweak off"
             : $"Run {measuredIndex} of {_test.MeasuredRunsTotal} · tweak {(n.Side == Side.Before ? "OFF" : "ON")}";
-        StepText.Text = $"Press Record, switch to {game} within 10 seconds and play your scene. Recording lasts {_test.Seconds} seconds; Pulse makes a sound when it's done.";
+        StepText.Text = $"Press Record, then switch to {game} within 10 seconds and play. Pulse records {_test.Seconds} seconds and beeps when done.";
     }
 
     async void Record_Click(object sender, RoutedEventArgs e)
@@ -237,6 +252,7 @@ public partial class MeasurePage : UserControl, IPage
         RunCard.Visibility = Visibility.Collapsed;
         SetupCard.Visibility = Visibility.Visible;
         RefreshGames();
+        _scan.Start();
     }
 
     // ───────── Result ─────────
@@ -282,6 +298,7 @@ public partial class MeasurePage : UserControl, IPage
     {
         ResultCard.Visibility = Visibility.Collapsed;
         SetupCard.Visibility = Visibility.Visible;
+        _scan.Start();
         MainWindow.Instance.Toast($"Kept “{_resultTweak?.Title}”.");
     }
 
@@ -290,6 +307,7 @@ public partial class MeasurePage : UserControl, IPage
         if (_resultTweak != null && _resultTweak.IsOn) await TweakRunner.Set(_resultTweak, false);
         ResultCard.Visibility = Visibility.Collapsed;
         SetupCard.Visibility = Visibility.Visible;
+        _scan.Start();
     }
 
     // ───────── Polling ─────────
@@ -334,7 +352,7 @@ public partial class MeasurePage : UserControl, IPage
         var advice = r.Device.StartsWith("Mouse")
             ? (r.RateHz < 400 ? " That's low for gaming: check your mouse software for a 1000 Hz polling option, and use a USB port on the back of the PC." : "")
             : (r.RateHz < 200 ? " Wired USB, a port on the back of the PC, and closing extra controller software (two layers like Steam Input + DS4Windows) usually help." : "");
-        detail.Text = $"Jitter {r.JitterMs:0.00} ms · {r.Samples} updates.{advice} {r.Note}".Trim();
+        detail.Text = $"Steadiness ±{r.JitterMs:0.00} ms.{advice} {r.Note}".Trim();
     }
 
     // ───────── Background CPU & boot ─────────
@@ -342,13 +360,14 @@ public partial class MeasurePage : UserControl, IPage
     async void Cpu_Click(object sender, RoutedEventArgs e)
     {
         CpuBtn.IsEnabled = false;
-        CpuResult.Text = "Measuring…";
-        CpuTop.Text = "";
+        CpuResult.Text = "60 s…";
+        CpuTop.Text = "Don't touch the PC until it finishes.";
         try
         {
             var s = await Task.Run(() => BackgroundCpuMeter.Measure(TimeSpan.FromSeconds(60)));
-            CpuResult.Text = $"{s.AveragePercent:0.0}% average";
-            CpuTop.Text = string.Join("\n", s.Top.Where(x => x.Percent >= 0.1).Select(x => $"{x.Percent,5:0.0}%  {x.Process}"));
+            CpuResult.Text = $"{s.AveragePercent:0.0}%";
+            var top = s.Top.Where(x => x.Percent >= 0.5).Take(3).Select(x => $"{x.Process} {x.Percent:0.0}%").ToList();
+            CpuTop.Text = top.Count == 0 ? "Nothing busy in the background." : "Busiest: " + string.Join(", ", top);
         }
         finally { CpuBtn.IsEnabled = true; }
     }
@@ -365,8 +384,8 @@ public partial class MeasurePage : UserControl, IPage
                 BootList.Text = "Windows hasn't recorded boot times on this PC (the Diagnostics-Performance log may be off).";
                 return;
             }
-            BootResult.Text = $"{boots.Select(b => b.Seconds).OrderBy(x => x).ElementAt(boots.Count / 2):0.0} s typical";
-            BootList.Text = string.Join("\n", boots.Select(b => $"{b.When:MMM d, h:mm tt}   {b.Seconds:0.0} s"));
+            BootResult.Text = $"{boots.Select(b => b.Seconds).OrderBy(x => x).ElementAt(boots.Count / 2):0.0} s";
+            BootList.Text = $"Typical of your last {boots.Count} starts. Longest: {boots.Max(b => b.Seconds):0.0} s.";
         }
         finally { BootBtn.IsEnabled = true; }
     }

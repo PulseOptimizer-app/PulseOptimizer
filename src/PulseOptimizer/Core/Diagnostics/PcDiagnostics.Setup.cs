@@ -147,6 +147,13 @@ public static partial class PcDiagnostics
         }
     }
 
+    /// <summary>Install folders of every Steam and Epic game found (used to recognize a running game).</summary>
+    internal static List<string> GameInstallFolders()
+    {
+        try { return SteamGames().Concat(EpicGames()).Select(g => g.Path).Where(p => p.Length > 3).ToList(); }
+        catch { return new List<string>(); }
+    }
+
     static IEnumerable<Finding> GamesOnHardDrive()
     {
         var games = SteamGames().Concat(EpicGames()).Where(g => g.Path.Length > 1 && g.Path[1] == ':').ToList();
