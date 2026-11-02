@@ -1,0 +1,62 @@
+<UserControl x:Class="Pulse.Pages.CleanupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Pulse.Ui">
+    <Grid Margin="0,6,0,0">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Style="{StaticResource H1}" Text="Clean up"/>
+                <TextBlock Style="{StaticResource Sub}" Margin="0,6,0,0" MaxWidth="700" HorizontalAlignment="Left"
+                           Text="Frees disk space by removing files Windows and apps no longer need. Files in use are skipped, and temporary files newer than 2 hours are left alone so running programs aren't disturbed. Freeing space doesn't make a PC faster unless the drive is nearly full."/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <TextBlock x:Name="TotalText" FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="Bold" HorizontalAlignment="Right" Text="—"/>
+                <TextBlock x:Name="TotalLabel" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Right" Text="selected to clean"/>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Right">
+                    <Button x:Name="ScanBtn" Style="{StaticResource GhostButton}" Content="Scan again" Click="Scan_Click"/>
+                    <Button x:Name="CleanBtn" Style="{StaticResource PrimaryButton}" Margin="10,0,0,0" Click="Clean_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" Style="{StaticResource IconText}" FontSize="13"/>
+                            <TextBlock Text="Clean selected" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Margin="0,20,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="CatList" Margin="0,0,0,32">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,10" ui:Anim.Reveal="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Selected, Mode=TwoWay}" Click="Toggle_Click" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                <Grid Grid.Column="1" Width="38" Height="38" Margin="16,0,14,0" VerticalAlignment="Top">
+                                    <Border CornerRadius="10" Background="#14FFFFFF"/>
+                                    <TextBlock Text="{Binding Glyph}" Style="{StaticResource IconText}" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"/>
+                                </Grid>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Name}"/>
+                                    <TextBlock Style="{StaticResource Body}" Margin="0,4,0,0" Text="{Binding Description}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Visibility="{Binding Warning, Converter={StaticResource HasValueToVis}}">
+                                        <TextBlock Text="&#xE7BA;" Style="{StaticResource IconText}" FontSize="12" Foreground="{StaticResource WarnBrush}" VerticalAlignment="Top" Margin="0,2,8,0"/>
+                                        <TextBlock Style="{StaticResource Body}" Foreground="{StaticResource WarnBrush}" Text="{Binding Warning}" MaxWidth="560"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Margin="20,0,0,0" VerticalAlignment="Top" MinWidth="90">
+                                    <TextBlock Text="{Binding SizeText}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="{Binding Count, StringFormat='{}{0:N0} files'}" Foreground="{StaticResource TextFaintBrush}" FontSize="11.5" HorizontalAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
