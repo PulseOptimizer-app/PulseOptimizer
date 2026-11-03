@@ -52,13 +52,4 @@ public class GameConfigTests
         Assert.Empty(p.Plan(after));
     }
 
-    [Fact]
-    public void Roblox_frame_cap()
-    {
-        var xml = "<roblox><Item class=\"UserGameSettings\"><Properties><int name=\"FramerateCap\">-1</int><float name=\"MouseSensitivity\">0.4</float></Properties></Item></roblox>";
-        var p = GameConfigs.For("roblox");
-        var after = p.Apply(xml, p.Plan(xml));
-        Assert.Contains("<int name=\"FramerateCap\">240</int>", after);
-        Assert.Contains("<float name=\"MouseSensitivity\">0.4</float>", after);
-    }
 }

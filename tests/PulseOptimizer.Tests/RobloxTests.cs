@@ -55,4 +55,22 @@ public class RobloxTests
             new Dictionary<string, string> { ["DFIntTaskSchedulerTargetFps"] = "9999", ["FFlagDebugSkyGray"] = "True" });
         Assert.Equal(new[] { "FFlagDebugSkyGray" }, f.Keys);
     }
+
+    [Fact]
+    public void Frame_cap_is_set_or_added_and_nothing_else_changes()
+    {
+        var xml = "<roblox><Item class=\"UserGameSettings\" referent=\"RBX1\"><Properties><int name=\"FramerateCap\">-1</int><float name=\"MouseSensitivity\">0.4</float></Properties></Item></roblox>";
+        var after = RobloxBoost.SetFramerateCap(xml, RobloxBoost.UncappedValue);
+        Assert.Contains("<int name=\"FramerateCap\">9999</int>", after);
+        Assert.Contains("<float name=\"MouseSensitivity\">0.4</float>", after);
+
+        var without = "<roblox><Item class=\"UserGameSettings\" referent=\"RBX1\"><Properties><float name=\"MouseSensitivity\">0.4</float></Properties></Item></roblox>";
+        Assert.Contains("<int name=\"FramerateCap\">240</int>", RobloxBoost.SetFramerateCap(without, "240"));
+    }
+
+    [Fact]
+    public void Max_fps_preset_uncaps()
+    {
+        Assert.Equal(RobloxBoost.UncappedValue, RobloxBoost.Presets["maxfps"]["fps"]);
+    }
 }

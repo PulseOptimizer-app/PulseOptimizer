@@ -44,7 +44,9 @@ public partial class RobloxPage : UserControl, IPage
               + (S.LastLaunch is DateTime t ? $" · last launched {Format.Ago(t)}" : "");
         var flags = RobloxBoost.BuildFlags(_options, S.CustomFlags);
         var fps = _options.First(o => o.Key == "fps").Value;
-        FlagSummary.Text = $"{flags.Count} Fast Flag{(flags.Count == 1 ? "" : "s")}" + (fps.Length > 0 ? $" and a {fps} FPS cap" : "") + " will be applied.";
+        var fpsText = fps == RobloxBoost.UncappedValue ? " and an uncapped frame rate (Roblox's settings file stays locked, so in-game settings changes won't save)"
+                    : fps.Length > 0 ? $" and a {fps} FPS cap" : "";
+        FlagSummary.Text = $"{flags.Count} Fast Flag{(flags.Count == 1 ? "" : "s")}{fpsText} will be applied.";
         ApplyBtn.IsEnabled = versions.Count > 0;
     }
 

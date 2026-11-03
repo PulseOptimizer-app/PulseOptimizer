@@ -302,6 +302,17 @@ public partial class GamesPage : UserControl, IPage
 
     void ShowAuto()
     {
+        if (_current?.Game.Id == "roblox")
+        {
+            // Roblox has its own launcher page (frame rate, uncapped FPS, Fast Flags, NVIDIA profile).
+            AutoCard.Visibility = Visibility.Visible;
+            AutoUndoBtn.Visibility = Visibility.Collapsed;
+            AutoBtn.IsEnabled = true;
+            AutoTitle.Text = "Uncap and boost Roblox";
+            AutoText.Text = "The Roblox page sets an uncapped frame rate, the performance Fast Flags Roblox allows, and NVIDIA settings for Roblox only.";
+            AutoBtnText.Text = "Open Roblox page";
+            return;
+        }
         var p = _current == null ? null : GameConfigs.For(_current.Game.Id);
         if (p == null) { AutoCard.Visibility = Visibility.Collapsed; return; }
         AutoCard.Visibility = Visibility.Visible;
@@ -326,6 +337,7 @@ public partial class GamesPage : UserControl, IPage
     async void Auto_Click(object sender, RoutedEventArgs e)
     {
         var g = _current;
+        if (g?.Game.Id == "roblox") { MainWindow.Instance.Navigate("roblox"); return; }
         var p = GameConfigs.For(g.Game.Id);
         var path = p?.FilePath;
         if (path == null) return;

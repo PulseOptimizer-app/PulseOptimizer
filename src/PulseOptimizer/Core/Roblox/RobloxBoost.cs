@@ -83,8 +83,8 @@ public static class RobloxBoost
     /// <summary>The options on the Roblox page. "" always means "leave it to Roblox".</summary>
     public static List<RobloxOption> CreateOptions() => new()
     {
-        Opt("fps", "Frame rate cap", "Roblox's own Maximum Frame Rate. It stays at 60 until you raise it. 240 is the highest Roblox allows: it no longer honors anything above that, and the old unlocker flag is blocked. Tools that go past 240 patch the running game, which risks a ban, so Pulse doesn't.",
-            new[] { ("Roblox default", ""), ("60", "60"), ("120", "120"), ("144", "144"), ("240 · max", "240") }, _ => new()),
+        Opt("fps", "Frame rate cap", "Roblox's own Maximum Frame Rate (60 until you raise it). Uncapped sets it to 9999 and locks Roblox's settings file so Roblox can't put it back to 240, the same way Froststrap does it; it never touches the game itself. While uncapped, changes you make in Roblox's own settings menu (volume, sensitivity, graphics) won't save. Pick any other option to unlock it.",
+            new[] { ("Roblox default", ""), ("60", "60"), ("120", "120"), ("144", "144"), ("240", "240"), ("Uncapped", UncappedValue) }, _ => new()),
         Opt("api", "Graphics API", "Which graphics system Roblox uses. DirectX 11 is the most stable on most PCs; Vulkan can give more FPS on some AMD and NVIDIA cards. Try both with the delay check.",
             new[] { ("Auto", ""), ("DirectX 11", "d3d11"), ("Vulkan", "vulkan"), ("OpenGL", "opengl") },
             v => v switch
@@ -122,7 +122,7 @@ public static class RobloxBoost
 
     public static readonly Dictionary<string, Dictionary<string, string>> Presets = new()
     {
-        ["maxfps"] = new() { ["fps"] = "240", ["api"] = "d3d11", ["quality"] = "1", ["textures"] = "1", ["msaa"] = "1", ["grass"] = "off", ["voxel"] = "on", ["sky"] = "", ["fullscreen"] = "", ["dpi"] = "" },
+        ["maxfps"] = new() { ["fps"] = UncappedValue, ["api"] = "d3d11", ["quality"] = "1", ["textures"] = "1", ["msaa"] = "1", ["grass"] = "off", ["voxel"] = "on", ["sky"] = "", ["fullscreen"] = "", ["dpi"] = "" },
         ["balanced"] = new() { ["fps"] = "144", ["api"] = "d3d11", ["quality"] = "", ["textures"] = "", ["msaa"] = "1", ["grass"] = "off", ["voxel"] = "", ["sky"] = "", ["fullscreen"] = "", ["dpi"] = "" },
         ["default"] = new() { ["fps"] = "", ["api"] = "", ["quality"] = "", ["textures"] = "", ["msaa"] = "", ["grass"] = "", ["voxel"] = "", ["sky"] = "", ["fullscreen"] = "", ["dpi"] = "" },
     };
@@ -185,18 +185,40 @@ public static class RobloxBoost
         File.WriteAllText(file, JsonSerializer.Serialize(flags, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    /// <summary>Roblox's Maximum Frame Rate, stored in GlobalBasicSettings_*.xml (only changed if the setting is already there).</summary>
+    public const string UncappedValue = "9999";
+
+    static string SettingsXml =>
+        Directory.Exists(RobloxDir) ? Directory.GetFiles(RobloxDir, "GlobalBasicSettings_*.xml").OrderByDescending(File.GetLastWriteTime).FirstOrDefault() : null;
+
+    /// <summary>True while Pulse has Roblox's settings file locked for an uncapped frame rate.</summary>
+    public static bool SettingsLocked => SettingsXml is string f && File.GetAttributes(f).HasFlag(FileAttributes.ReadOnly);
+
+    /// <summary>
+    /// Roblox's Maximum Frame Rate, in GlobalBasicSettings_*.xml. Uncapped (9999) also marks the file read-only, because
+    /// Roblox otherwise resets anything above 240 when it saves. Any other choice unlocks the file again.
+    /// "" leaves Roblox's value alone but still unlocks the file if Pulse had locked it.
+    /// </summary>
     public static bool WriteFpsCap(string value)
     {
-        if (string.IsNullOrEmpty(value) || !Directory.Exists(RobloxDir)) return false;
-        var file = Directory.GetFiles(RobloxDir, "GlobalBasicSettings_*.xml").OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
+        var file = SettingsXml;
         if (file == null) return false;
+        var attrs = File.GetAttributes(file);
+        if (attrs.HasFlag(FileAttributes.ReadOnly)) File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);
+        if (string.IsNullOrEmpty(value)) return true;
         var xml = File.ReadAllText(file);
-        var rx = new Regex("(<int name=\"FramerateCap\">)(-?\\d+)(</int>)");
-        if (!rx.IsMatch(xml)) return false;
-        var updated = rx.Replace(xml, m => m.Groups[1].Value + value + m.Groups[3].Value, 1);
+        var updated = SetFramerateCap(xml, value);
         if (updated != xml) File.WriteAllText(file, updated);
+        if (value == UncappedValue) File.SetAttributes(file, File.GetAttributes(file) | FileAttributes.ReadOnly);
         return true;
+    }
+
+    /// <summary>Sets FramerateCap in Roblox's settings XML, adding it to the user settings if Roblox hasn't written it yet.</summary>
+    internal static string SetFramerateCap(string xml, string value)
+    {
+        var rx = new Regex("(<int name=\"FramerateCap\">)(-?\\d+)(</int>)");
+        if (rx.IsMatch(xml)) return rx.Replace(xml, m => m.Groups[1].Value + value + m.Groups[3].Value, 1);
+        var props = new Regex("(<Item class=\"UserGameSettings\"[^>]*>\\s*<Properties>)");
+        return props.IsMatch(xml) ? props.Replace(xml, m => m.Groups[1].Value + $"\n\t\t\t<int name=\"FramerateCap\">{value}</int>", 1) : xml;
     }
 
     /// <summary>Applies the saved choices to every installed version (call with Roblox closed for the FPS cap to stick).</summary>

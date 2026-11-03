@@ -168,18 +168,6 @@ public static class GameConfigs
             Note = "Global illumination, upscaling and Low Latency Mode stay manual: set them in Settings → Display and Graphics.",
         },
 
-        // Roblox: LocalAppData\Roblox\GlobalBasicSettings_13.xml. Only the frame rate cap (Roblox's own Maximum Frame Rate).
-        new GameConfigProfile
-        {
-            GameId = "roblox", Format = ConfigFormat.RobloxXml,
-            Locate = () =>
-            {
-                var dir = Path.Combine(Local, "Roblox");
-                return Directory.Exists(dir) ? Newest(Directory.GetFiles(dir, "GlobalBasicSettings_*.xml")) : null;
-            },
-            Edits = new() { new("FramerateCap", "240", "Maximum frame rate", v => v is "-1" or "0" ? "Default (60)" : v + " FPS") },
-            Note = "Pulse sets 240, the highest Roblox offers; your monitor shows as many of those frames as it can.",
-        },
     };
 
     public static GameConfigProfile For(string gameId) => All.FirstOrDefault(p => p.GameId == gameId);
