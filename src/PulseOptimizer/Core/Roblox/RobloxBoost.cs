@@ -81,8 +81,8 @@ public static class RobloxBoost
     /// <summary>The options on the Roblox page. "" always means "leave it to Roblox".</summary>
     public static List<RobloxOption> CreateOptions() => new()
     {
-        Opt("fps", "Frame rate cap", "Roblox's own Maximum Frame Rate. It stays at 60 until you raise it. Pick your monitor's refresh rate or the closest one under it.",
-            new[] { ("Roblox default", ""), ("60", "60"), ("120", "120"), ("144", "144"), ("240", "240") }, _ => new()),
+        Opt("fps", "Frame rate cap", "Roblox's own Maximum Frame Rate. It stays at 60 until you raise it. 240 is the highest Roblox allows: it no longer honors anything above that, and the old unlocker flag is blocked. Tools that go past 240 patch the running game, which risks a ban, so Pulse doesn't.",
+            new[] { ("Roblox default", ""), ("60", "60"), ("120", "120"), ("144", "144"), ("240 · max", "240") }, _ => new()),
         Opt("api", "Graphics API", "Which graphics system Roblox uses. DirectX 11 is the most stable on most PCs; Vulkan can give more FPS on some AMD and NVIDIA cards. Try both with the delay check.",
             new[] { ("Auto", ""), ("DirectX 11", "d3d11"), ("Vulkan", "vulkan"), ("OpenGL", "opengl") },
             v => v switch
