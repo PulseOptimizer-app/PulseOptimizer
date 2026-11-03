@@ -178,6 +178,19 @@ public partial class DeclutterPage : UserControl, IPage
 
     void Pick_Click(object sender, RoutedEventArgs e) => UpdateTotal();
 
+    /// <summary>Clicking anywhere on a row ticks it (except its own buttons).</summary>
+    void Row_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        for (var d = e.OriginalSource as DependencyObject; d != null && d != sender; d = d is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is System.Windows.Controls.Primitives.ButtonBase) return;
+        switch ((sender as FrameworkElement)?.DataContext)
+        {
+            case QuickItem q when q.CanPick: q.Selected = !q.Selected; UpdateTotal(); break;
+            case ReviewFile f: f.Selected = !f.Selected; UpdateTotal(); break;
+            case AppEntry a when a.CanRemove && !a.Busy: a.Selected = !a.Selected; UpdateBulk(); break;
+        }
+    }
+
     void Action_Click(object sender, RoutedEventArgs e) => MainWindow.Instance.RunAction((sender as FrameworkElement)?.Tag as string);
 
     void ShowFile_Click(object sender, RoutedEventArgs e)
@@ -256,7 +269,7 @@ public partial class DeclutterPage : UserControl, IPage
             if (files.Count > 0)
             {
                 MainWindow.Instance.SetBusyStatus("Moving files to the Recycle Bin…");
-                recycled = await Task.Run(() => DeclutterEngine.Recycle(files));
+                recycled = await DeclutterEngine.RecycleAsync(files);
             }
             if (hib != null)
             {

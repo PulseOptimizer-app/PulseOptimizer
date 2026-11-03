@@ -260,8 +260,25 @@ public static class DeclutterEngine
     const uint FO_DELETE = 3;
     const ushort FOF_SILENT = 0x4, FOF_NOCONFIRMATION = 0x10, FOF_ALLOWUNDO = 0x40, FOF_NOERRORUI = 0x400;
 
-    /// <summary>Sends files to the Recycle Bin (never a permanent delete). Returns bytes moved.</summary>
-    public static long Recycle(IEnumerable<ReviewFile> files)
+    /// <summary>
+    /// Sends files to the Recycle Bin (never a permanent delete). Returns bytes moved.
+    /// The shell's file operations need a single-threaded (STA) thread, so this runs on its own one.
+    /// </summary>
+    public static Task<long> RecycleAsync(IEnumerable<ReviewFile> files)
+    {
+        var list = files.ToList();
+        var done = new TaskCompletionSource<long>();
+        var th = new Thread(() =>
+        {
+            try { done.SetResult(Recycle(list)); }
+            catch (Exception ex) { done.SetException(ex); }
+        }) { IsBackground = true };
+        th.SetApartmentState(ApartmentState.STA);
+        th.Start();
+        return done.Task;
+    }
+
+    static long Recycle(IEnumerable<ReviewFile> files)
     {
         long moved = 0;
         foreach (var f in files)

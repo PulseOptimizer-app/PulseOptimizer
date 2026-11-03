@@ -125,16 +125,28 @@
                             <ItemsControl x:Name="StepList" Margin="0,18,0,0">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="0,0,0,16" ui:Anim.Reveal="True">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                            <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Done, Mode=TwoWay}" IsEnabled="{Binding CanTick}" Click="Step_Click" Margin="0,1,0,0"/>
-                                            <StackPanel Grid.Column="1" Opacity="{Binding Done, Converter={StaticResource BoolToOpacity}, ConverterParameter=invert}">
-                                                <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}"/>
-                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Body}" Margin="0,4,0,0"/>
-                                                <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Content="{Binding ActionText}" Tag="{Binding ActionKey}"
-                                                        Click="StepAction_Click" Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}"/>
-                                            </StackPanel>
-                                        </Grid>
+                                        <!-- The whole step is clickable, not just the circle -->
+                                        <Border x:Name="Row" Margin="-12,0,-12,6" Padding="12,10" CornerRadius="10" Background="Transparent" Cursor="Hand"
+                                                MouseLeftButtonUp="StepRow_Click" ui:Anim.Reveal="True">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Done, Mode=TwoWay}" IsEnabled="{Binding CanTick}" IsHitTestVisible="False" Margin="0,1,0,0"/>
+                                                <StackPanel Grid.Column="1" Opacity="{Binding Done, Converter={StaticResource BoolToOpacity}, ConverterParameter=invert}">
+                                                    <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}"/>
+                                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+                                                    <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Content="{Binding ActionText}" Tag="{Binding ActionKey}"
+                                                            Click="StepAction_Click" Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="#0AFFFFFF"/>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding CanTick}" Value="False">
+                                                <Setter TargetName="Row" Property="Cursor" Value="Arrow"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

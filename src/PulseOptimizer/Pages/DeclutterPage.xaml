@@ -5,9 +5,9 @@
     <UserControl.Resources>
         <!-- A file the user reviews -->
         <DataTemplate x:Key="FileRow">
-            <Grid Margin="0,0,0,2" Background="Transparent">
+            <Grid Margin="0,0,0,2" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="Row_Click">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="36"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" Click="Pick_Click" VerticalAlignment="Center"/>
+                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" IsHitTestVisible="False" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" Margin="0,6">
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                     <TextBlock FontSize="11.5" Foreground="{StaticResource TextFaintBrush}" TextTrimming="CharacterEllipsis">
@@ -22,7 +22,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0,6,0,40">
-            <TextBlock Style="{StaticResource H1}" Text="Declutter"/>
+            <TextBlock Style="{StaticResource H1}" Text="Debloat"/>
             <TextBlock Style="{StaticResource Sub}" Margin="0,6,0,0" MaxWidth="760" HorizontalAlignment="Left"
                        Text="See where your space went and get it back. Your own files only ever go to the Recycle Bin, Windows' update files are cleaned with Microsoft's own tool, and you see everything before it goes."/>
 
@@ -68,10 +68,10 @@
             <ItemsControl x:Name="QuickList">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,8" Padding="18,14" ui:Anim.Reveal="True">
+                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,8" Padding="18,14" ui:Anim.Reveal="True" Cursor="Hand" MouseLeftButtonUp="Row_Click">
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="36"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding CanPick}" Click="Pick_Click" VerticalAlignment="Center"/>
+                                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding CanPick}" IsHitTestVisible="False" VerticalAlignment="Center"/>
                                 <Grid Grid.Column="1" Width="36" Height="36" Margin="2,0,14,0">
                                     <Border CornerRadius="10" Background="#14FFFFFF"/>
                                     <TextBlock Text="{Binding Glyph}" Style="{StaticResource IconText}" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"/>
@@ -154,14 +154,14 @@
             <ItemsControl x:Name="AppList" VirtualizingPanel.IsVirtualizing="True">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,6" Padding="14,10" ui:Anim.Reveal="True"
+                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,6" Padding="14,10" ui:Anim.Reveal="True" Cursor="Hand" MouseLeftButtonUp="Row_Click"
                                 Opacity="{Binding Removed, Converter={StaticResource BoolToOpacity}, ConverterParameter=invert}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="34"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding CanRemove}" Click="AppPick_Click" VerticalAlignment="Center"/>
+                                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding CanRemove}" IsHitTestVisible="False" VerticalAlignment="Center"/>
                                 <!-- The app's own icon; a quiet monogram if it has none -->
                                 <Grid Grid.Column="1" Width="34" Height="34" Margin="0,0,14,0">
                                     <Border CornerRadius="8" Background="{StaticResource Surface2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"

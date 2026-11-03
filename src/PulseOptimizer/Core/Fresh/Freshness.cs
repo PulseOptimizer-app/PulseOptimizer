@@ -92,9 +92,9 @@ public static class Freshness
         double freePct = now.TotalBytes > 0 ? (double)now.FreeBytes / now.TotalBytes : 1;
         long lost = baseline.FreeBytes - now.FreeBytes;
         if (freePct < 0.12)
-            list.Add(new Drift { Kind = DriftKind.Problem, Title = "Your drive is nearly full", Detail = $"{Format.Bytes(now.FreeBytes)} free. A nearly full drive slows Windows, updates and game patches.", ActionKey = "page:cleanup", ActionText = "Open Declutter" });
+            list.Add(new Drift { Kind = DriftKind.Problem, Title = "Your drive is nearly full", Detail = $"{Format.Bytes(now.FreeBytes)} free. A nearly full drive slows Windows, updates and game patches.", ActionKey = "page:cleanup", ActionText = "Open Debloat" });
         else if (lost > 15L * 1024 * 1024 * 1024)
-            list.Add(new Drift { Kind = DriftKind.Changed, Title = $"{Format.Bytes(lost)} less free space", Detail = $"{Format.Bytes(now.FreeBytes)} free now. Declutter shows where it went.", ActionKey = "page:cleanup", ActionText = "Open Declutter" });
+            list.Add(new Drift { Kind = DriftKind.Changed, Title = $"{Format.Bytes(lost)} less free space", Detail = $"{Format.Bytes(now.FreeBytes)} free now. Debloat shows where it went.", ActionKey = "page:cleanup", ActionText = "Open Debloat" });
         else list.Add(new Drift { Kind = DriftKind.Good, Title = "Plenty of free space", Detail = $"{Format.Bytes(now.FreeBytes)} free." });
 
         if (now.ClutterBytes > 1L * 1024 * 1024 * 1024)

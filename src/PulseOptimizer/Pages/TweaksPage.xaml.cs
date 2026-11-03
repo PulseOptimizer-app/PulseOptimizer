@@ -34,6 +34,8 @@ public partial class TweaksPage : UserControl, IPage
             });
             _view = CollectionViewSource.GetDefaultView(TweakCatalog.All);
             _view.Filter = Filter;
+            // Recommended-for-this-PC first, then what's on, then the rest.
+            if (_view is ListCollectionView lcv) lcv.CustomSort = Comparer<object>.Create((a, b) => Rank((Tweak)a).CompareTo(Rank((Tweak)b)));
             TweakList.ItemsSource = _view;
             LoadingPanel.Visibility = Visibility.Collapsed;
             _loaded = true;
@@ -41,6 +43,9 @@ public partial class TweaksPage : UserControl, IPage
         }
         UpdateCount();
     }
+
+    static int Rank(Tweak t) =>
+        !t.GateStatus.Met ? 3 : t.Recommended && !t.IsOn ? 0 : t.Recommended ? 1 : 2;
 
     bool Filter(object o)
     {
@@ -64,7 +69,13 @@ public partial class TweaksPage : UserControl, IPage
         var all = TweakCatalog.All;
         int on = all.Count(t => t.IsOn);
         int rec = all.Count(t => t.Recommended && t.GateStatus.Met && !t.IsOn);
-        CountText.Text = $"{on} of {all.Count} on · {rec} recommended for this PC not applied yet";
+        int recTotal = all.Count(t => t.Recommended && t.GateStatus.Met);
+        int recOn = recTotal - rec;
+        CountText.Text = rec == 0
+            ? $"All {recTotal} recommended tweaks for this PC are on · {on} on in total"
+            : $"{recOn} of {recTotal} recommended tweaks on · {rec} to go";
+        Pulse.Ui.Anim.Bar(RecBar, recTotal == 0 ? 1 : (double)recOn / recTotal);
+        foreach (var t in all) t.RefreshStatus();
     }
 
     void Chip_Checked(object sender, RoutedEventArgs e)
@@ -79,8 +90,20 @@ public partial class TweaksPage : UserControl, IPage
     {
         var cb = (CheckBox)sender;
         var t = (Tweak)cb.DataContext;
-        await TweakRunner.Set(t, cb.IsChecked == true);
+        bool want = cb.IsChecked == true;
+        // The click set IsChecked directly, which would cut the switch off from the tweak's real state.
+        // Re-attach it so the switch always shows what's actually applied (also after a cancel or a failure).
+        cb.SetBinding(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, new Binding(nameof(Tweak.IsOn)) { Mode = BindingMode.OneWay });
+        if (t.IsBusy) return;
+        await TweakRunner.Set(t, want);
         UpdateCount();
+    }
+
+    void Card_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        for (var d = e.OriginalSource as DependencyObject; d != null && d != sender; d = d is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is System.Windows.Controls.Primitives.ButtonBase) return;
+        if (((FrameworkElement)sender).FindName("DetailsToggle") is System.Windows.Controls.Primitives.ToggleButton tb) tb.IsChecked = tb.IsChecked != true;
     }
 
     void Measure_Click(object sender, RoutedEventArgs e) =>
@@ -95,6 +118,7 @@ public partial class TweaksPage : UserControl, IPage
     async void ApplyRecommended_Click(object sender, RoutedEventArgs e)
     {
         await TweakRunner.ApplyRecommended();
+        _view?.Refresh();
         UpdateCount();
     }
 }

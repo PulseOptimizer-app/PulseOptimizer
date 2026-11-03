@@ -129,7 +129,7 @@
                 <Button Style="{StaticResource DashTile}" Margin="0,0,12,0" Tag="cleanup" Click="Tile_Click" ui:Anim.Reveal="True">
                     <StackPanel>
                         <TextBlock Text="&#xE74D;" Style="{StaticResource IconText}" FontSize="18" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Left"/>
-                        <TextBlock Text="Declutter" FontWeight="SemiBold" FontSize="14" Margin="0,12,0,0"/>
+                        <TextBlock Text="Debloat" FontWeight="SemiBold" FontSize="14" Margin="0,12,0,0"/>
                         <TextBlock x:Name="DeclutterStat" FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>

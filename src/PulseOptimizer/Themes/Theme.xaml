@@ -577,8 +577,8 @@
 
 
     <!-- ═════════ Game tile (DataContext: GameItem) ═════════
-         Cover art card. Behind it, a blurred copy of the art glows in the game's own colors; the name sits on
-         frosted glass (a blurred copy of the art, clipped to the bottom). Hover: lift, zoom, glow up, light sweep.
+         Cover art card. The name sits on
+         frosted glass (a blurred copy of the art, clipped to the bottom). Hover: lift, zoom, spinning gradient border, light sweep.
          Without cover art: the game's real icon floats over its colors. -->
     <Style x:Key="GameTile" TargetType="Button">
         <Setter Property="Width" Value="140"/>
@@ -596,14 +596,6 @@
                                 <TranslateTransform x:Name="Lift"/>
                             </TransformGroup>
                         </Grid.RenderTransform>
-
-                        <!-- Ambient glow: the art itself, blurred, spilling out around the card -->
-                        <Grid x:Name="Ambient" Margin="-6,4,-6,-10" Opacity="0.28" IsHitTestVisible="False">
-                            <Grid.Effect><BlurEffect Radius="28" KernelType="Gaussian"/></Grid.Effect>
-                            <Border CornerRadius="18" Background="{Binding Tint}"/>
-                            <Image Source="{Binding CoverImage}" Stretch="UniformToFill"/>
-                            <Image Source="{Binding Icon}" Stretch="UniformToFill" Visibility="{Binding HasCover, Converter={StaticResource InverseBoolToVis}}"/>
-                        </Grid>
 
                         <Border x:Name="Card" CornerRadius="14" Background="{StaticResource SurfaceBrush}" BorderBrush="#26FFFFFF" BorderThickness="1">
                             <Grid>
@@ -674,7 +666,21 @@
                                 </Rectangle>
                             </Grid>
                         </Border>
-                        <Border x:Name="Ring" CornerRadius="14" BorderThickness="1.5" BorderBrush="{StaticResource AccentGradient}" Opacity="0"/>
+                        <!-- Animated border: a gradient that spins around the edge while hovered -->
+                        <Border x:Name="Ring" CornerRadius="14" BorderThickness="2" Opacity="0" IsHitTestVisible="False">
+                            <Border.BorderBrush>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <LinearGradientBrush.RelativeTransform>
+                                        <RotateTransform CenterX="0.5" CenterY="0.5" Angle="0"/>
+                                    </LinearGradientBrush.RelativeTransform>
+                                    <GradientStop Color="#22D3EE" Offset="0"/>
+                                    <GradientStop Color="#5B8CFF" Offset="0.35"/>
+                                    <GradientStop Color="#8B5CF6" Offset="0.6"/>
+                                    <GradientStop Color="#1A8B5CF6" Offset="0.8"/>
+                                    <GradientStop Color="#22D3EE" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.BorderBrush>
+                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -687,9 +693,11 @@
                                     <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.6"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
                                     <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.35"><DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.5"/></DoubleAnimation.EasingFunction></DoubleAnimation>
                                     <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.35"><DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.5"/></DoubleAnimation.EasingFunction></DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="Ambient" Storyboard.TargetProperty="Opacity" To="0.85" Duration="0:0:0.35"/>
-                                    <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.3"/>
                                     <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
+                                </Storyboard></BeginStoryboard>
+                                <BeginStoryboard x:Name="Spin"><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="(Border.BorderBrush).(Brush.RelativeTransform).(RotateTransform.Angle)"
+                                                     From="0" To="360" Duration="0:0:2.4" RepeatBehavior="Forever"/>
                                     <DoubleAnimation Storyboard.TargetName="SweepT" Storyboard.TargetProperty="X" From="-80" To="240" Duration="0:0:0.75"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
                                 </Storyboard></BeginStoryboard>
                             </Trigger.EnterActions>
@@ -702,10 +710,9 @@
                                     <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.45"/>
                                     <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.3"/>
                                     <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.3"/>
-                                    <DoubleAnimation Storyboard.TargetName="Ambient" Storyboard.TargetProperty="Opacity" To="0.28" Duration="0:0:0.4"/>
-                                    <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0.8" Duration="0:0:0.4"/>
                                     <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3"/>
                                 </Storyboard></BeginStoryboard>
+                                <StopStoryboard BeginStoryboardName="Spin"/>
                             </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
@@ -723,7 +730,6 @@
                             </Trigger.ExitActions>
                         </Trigger>
                         <DataTrigger Binding="{Binding Running}" Value="True">
-                            <Setter TargetName="Ambient" Property="Opacity" Value="0.6"/>
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard><Storyboard RepeatBehavior="Forever" AutoReverse="True">
                                     <DoubleAnimation Storyboard.TargetName="StatusDot" Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:0.8"/>
@@ -733,7 +739,6 @@
                         <DataTrigger Binding="{Binding Dim}" Value="True">
                             <Setter TargetName="Badge" Property="Opacity" Value="0.45"/>
                             <Setter TargetName="Art" Property="Opacity" Value="0.55"/>
-                            <Setter TargetName="Ambient" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="Glow" Property="Opacity" Value="0.35"/>
                             <Setter TargetName="StatusDot" Property="Fill" Value="{StaticResource TextFaintBrush}"/>
                         </DataTrigger>

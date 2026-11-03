@@ -73,7 +73,10 @@ public class Tweak : Observable
     public Action AfterChange { get; init; }
 
     bool _isOn, _isBusy;
-    public bool IsOn { get => _isOn; set => Set(ref _isOn, value); }
+    public bool IsOn { get => _isOn; set { if (Set(ref _isOn, value)) Raise(nameof(StatusText)); } }
+    /// <summary>"On" plus who set it, so a tweak Windows already had doesn't look like Pulse's doing.</summary>
+    public string StatusText => !IsOn ? "" : TweakEngine.AppliedByPulse(this) ? "On · set by Pulse" : "Already set on this PC";
+    public void RefreshStatus() => Raise(nameof(StatusText));
     public bool IsBusy { get => _isBusy; set => Set(ref _isBusy, value); }
 
     GateResult _gate;

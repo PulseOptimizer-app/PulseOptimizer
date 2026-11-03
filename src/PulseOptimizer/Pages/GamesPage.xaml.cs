@@ -154,6 +154,16 @@ public partial class GamesPage : UserControl, IPage
         Anim.Bar(PlanBar, _steps.Count == 0 ? 0 : (double)_current.Done / _steps.Count);
     }
 
+    void StepRow_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Clicks on the step's own link button don't toggle it.
+        for (var d = e.OriginalSource as DependencyObject; d != null && d != sender; d = d is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is Button) return;
+        if ((sender as FrameworkElement)?.DataContext is not PlanStep step || !step.CanTick) return;
+        step.Done = !step.Done;
+        Step_Click(sender, e);
+    }
+
     void Step_Click(object sender, RoutedEventArgs e)
     {
         if (_current == null) return;
