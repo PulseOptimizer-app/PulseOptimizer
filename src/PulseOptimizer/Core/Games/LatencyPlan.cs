@@ -21,7 +21,16 @@ public class GameItem : Observable
     public int Total { get => _total; set { if (Set(ref _total, value)) Raise(nameof(ProgressText)); } }
     public string ProgressText => Total == 0 ? "" : $"{Done}/{Total} done";
 
-    public string StatusText => Running ? "Running now" : Installed ? "Installed" : "";
+    public string StatusText => Game.Id == "other" ? "Steps for any game" : Running ? "Running now" : Installed ? "Installed" : "Not installed";
+    public bool Dim => !Installed && Game.Id != "other";
+    public string Short => Game.Short;
+    public System.Windows.Media.Brush Tint => GameArt.Tint(Game);
+    public System.Windows.Media.ImageSource Icon { get; set; }
+    public System.Windows.Media.ImageSource CoverImage { get; set; }
+    public bool HasIcon => Icon != null;
+    public bool HasCover => CoverImage != null;
+    /// <summary>No cover and no icon: show the short name on the colored tile.</summary>
+    public bool ShowLetters => Icon == null && CoverImage == null;
 }
 
 public class PlanStep : Observable
@@ -64,11 +73,22 @@ public static class LatencyPlan
         {
             bool installed = names.Any(n => g.Matches.Any(m => n.Contains(m, StringComparison.OrdinalIgnoreCase)));
             bool isRunning = g.Exes.Any(running.Contains);
-            if (installed || isRunning) list.Add(new GameItem { Game = g, Installed = installed, Running = isRunning });
+            var (icon, cover) = installed || isRunning ? GameArt.Find(g) : (null, null);
+            list.Add(new GameItem { Game = g, Installed = installed || isRunning, Running = isRunning, Icon = icon, CoverImage = cover });
         }
-        list = list.OrderByDescending(i => i.Running).ThenBy(i => i.Name).ToList();
+        // Running first, then installed, then the rest, keeping the catalog's order within each group.
+        list = list.OrderByDescending(i => i.Running).ThenByDescending(i => i.Installed).ToList();
         list.Add(new GameItem { Game = GameCatalog.Generic });
         return list;
+    }
+
+    static Task<List<GameItem>> _games;
+
+    /// <summary>The game list, found once and shared by Home and Games.</summary>
+    public static Task<List<GameItem>> GamesAsync(bool refresh = false)
+    {
+        if (_games == null || refresh || _games.IsFaulted) _games = Task.Run(FindGames);
+        return _games;
     }
 
     public static HashSet<string> RunningExes()
@@ -186,6 +206,15 @@ public static class LatencyPlan
             Detail = "In your mouse's software, choose 1000 Hz or higher. NVIDIA measured up to 3 ms extra delay at 125 Hz. DPI doesn't change delay. Test it on the Measure page.",
             ActionKey = "page:measure", ActionText = "Test my mouse",
         });
+
+        // 6. The settings that cost the most frames in this game.
+        if (g.FpsSettings.Length > 0)
+            steps.Add(new PlanStep
+            {
+                Id = "fps", Done = T("fps"),
+                Title = g.Id == "other" ? "Lower the settings that cost the most FPS" : $"Get more FPS in {g.Name}",
+                Detail = string.Join("\n", g.FpsSettings.Select(f => "•  " + f)),
+            });
 
         if (g.Note.Length > 0 && g.Id != "other")
             steps.Add(new PlanStep { Id = "note", Done = T("note"), Title = $"{g.Name} tip", Detail = g.Note });

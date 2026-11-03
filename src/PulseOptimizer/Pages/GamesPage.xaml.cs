@@ -20,20 +20,26 @@ public partial class GamesPage : UserControl, IPage
 
     public async void OnShown(object parameter)
     {
-        if (_loaded) { RefreshRunning(); return; }
-        LoadingPanel.Visibility = Visibility.Visible;
-        (_games, _hw, _monitor) = await Task.Run(() =>
+        if (!_loaded)
         {
-            var hw = HardwareFacts.Get();
-            var mons = PcDiagnostics.LastMonitors.Count > 0 ? PcDiagnostics.LastMonitors : Displays.Enumerate();
-            var primary = mons.FirstOrDefault(m => m.IsPrimary) ?? mons.FirstOrDefault();
-            return (LatencyPlan.FindGames(), hw, primary);
-        });
-        foreach (var g in _games) UpdateProgress(g);
-        GameList.ItemsSource = _games;
-        LoadingPanel.Visibility = Visibility.Collapsed;
-        GameList.SelectedIndex = 0;
-        _loaded = true;
+            LoadingPanel.Visibility = Visibility.Visible;
+            var gamesTask = LatencyPlan.GamesAsync();
+            (_hw, _monitor) = await Task.Run(() =>
+            {
+                var hw = HardwareFacts.Get();
+                var mons = PcDiagnostics.LastMonitors.Count > 0 ? PcDiagnostics.LastMonitors : Displays.Enumerate();
+                return (hw, mons.FirstOrDefault(m => m.IsPrimary) ?? mons.FirstOrDefault());
+            });
+            _games = await gamesTask;
+            foreach (var g in _games) UpdateProgress(g);
+            GameGrid.ItemsSource = _games;
+            LoadingPanel.Visibility = Visibility.Collapsed;
+            BuildChips();
+            _loaded = true;
+        }
+        else RefreshRunning();
+
+        if (parameter is string id && _games.FirstOrDefault(g => g.Game.Id == id) is GameItem pick) Open(pick);
     }
 
     void RefreshRunning()
@@ -49,13 +55,77 @@ public partial class GamesPage : UserControl, IPage
         g.Done = steps.Count(s => s.Done);
     }
 
-    void Game_Selected(object sender, SelectionChangedEventArgs e)
+    // ───────── Library ─────────
+
+    void Tile_Click(object sender, RoutedEventArgs e)
     {
-        if (GameList.SelectedItem is not GameItem g) return;
+        if ((sender as FrameworkElement)?.DataContext is GameItem g) Open(g);
+    }
+
+    void Back_Click(object sender, RoutedEventArgs e)
+    {
+        DetailView.Visibility = Visibility.Collapsed;
+        LibraryView.Visibility = Visibility.Visible;
+        Anim.Play(LibraryView);
+    }
+
+    void BuildChips()
+    {
+        GenreChips.Children.Clear();
+        var labels = new List<(string key, string text)> { ("foryou", "For you"), ("free", "Free to play") };
+        labels.AddRange(Suggestions.Genres.Select(g => (g, char.ToUpperInvariant(g[0]) + g[1..])));
+        foreach (var (key, text) in labels)
+        {
+            var chip = new RadioButton { Style = (Style)FindResource("Chip"), Content = text, Tag = key, GroupName = "Genre" };
+            chip.Checked += (_, _) => ShowSuggestions(key);
+            GenreChips.Children.Add(chip);
+        }
+        ((RadioButton)GenreChips.Children[0]).IsChecked = true;
+    }
+
+    List<string> InstalledNames()
+    {
+        var names = PcDiagnostics.LauncherGames().Select(g => g.Name).ToList();
+        names.AddRange(_games.Where(g => g.Installed).Select(g => g.Name));
+        return names;
+    }
+
+    async void ShowSuggestions(string key)
+    {
+        var games = _games;
+        var (list, because) = await Task.Run(() =>
+        {
+            var names = InstalledNames();
+            return key == "foryou"
+                ? Suggestions.ForYou(games.Where(g => g.Installed && g.Game.Id != "other").Select(g => g.Game), names)
+                : (Suggestions.ForGenre(key, names), "");
+        });
+        SuggestBecause.Text = key == "foryou"
+            ? (because.Length > 0 ? because + ", you might like these." : "Install a game and Pulse will tailor this. Meanwhile, some great free ones:")
+            : $"Well-reviewed {(key == "free" ? "free" : key)} games you don't have yet.";
+        SuggestList.ItemsSource = list;
+    }
+
+    void Suggest_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string url) MainWindow.Instance.RunAction("url:" + url);
+    }
+
+    // ───────── One game ─────────
+
+    void Open(GameItem g)
+    {
         _current = g;
         _steps = LatencyPlan.Build(g.Game, _hw, _monitor);
         StepList.ItemsSource = _steps;
         GameTitle.Text = g.Name;
+        GameStatus.Text = g.Game.Id == "other" ? "General steps that work in most games" : g.StatusText + (g.HasReflex ? " · NVIDIA Reflex" : "") + (g.HasAntiLag2 ? " · AMD Anti-Lag 2" : "");
+        Banner.Background = g.Tint;
+        BannerIconBox.Background = g.Tint;
+        var art = g.CoverImage ?? g.Icon;
+        BannerBlur.Source = art;
+        BannerIcon.Source = g.Icon ?? g.CoverImage;
+        BannerLetters.Text = art == null ? g.Short : "";
         ReflexPill.Visibility = g.HasReflex ? Visibility.Visible : Visibility.Collapsed;
         AntiLagPill.Visibility = g.HasAntiLag2 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -70,7 +140,9 @@ public partial class GamesPage : UserControl, IPage
 
         ShowLastCheck();
         UpdateBar();
-        PlanPanel.Visibility = Visibility.Visible;
+        LibraryView.Visibility = Visibility.Collapsed;
+        DetailView.Visibility = Visibility.Visible;
+        DetailView.ScrollToTop();
         Anim.Play(PlanPanel);
     }
 

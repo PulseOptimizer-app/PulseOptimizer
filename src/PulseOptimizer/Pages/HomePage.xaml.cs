@@ -1,115 +1,103 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
+using System.Windows.Media.Animation;
 using Pulse.Core;
+using Pulse.Core.Games;
 using Pulse.Ui;
 
 namespace Pulse.Pages;
 
+/// <summary>The dashboard: PC health, live load, shortcuts and the game library.</summary>
 public partial class HomePage : UserControl, IPage
 {
-    readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
-    readonly CpuMeter _cpu = new();
-    bool _running, _specsLoaded;
+    bool _loaded;
 
     public HomePage()
     {
         InitializeComponent();
-        _timer.Tick += (_, _) => UpdateLive();
-        Loaded += (_, _) => _timer.Start();
-        Unloaded += (_, _) => _timer.Stop();
+        Loaded += (_, _) =>
+        {
+            LiveStats.Updated += UpdateLive;
+            DiagnosePage.Completed += ShowHealth;
+            LiveDot.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0.25, TimeSpan.FromSeconds(0.9)) { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
+            UpdateLive();
+        };
+        Unloaded += (_, _) =>
+        {
+            LiveStats.Updated -= UpdateLive;
+            DiagnosePage.Completed -= ShowHealth;
+        };
     }
 
     public async void OnShown(object parameter)
     {
-        if (_specsLoaded) return;
-        _specsLoaded = true;
-        _cpu.Sample();
-        var specs = await Task.Run(() => new (string glyph, string label, string value)[]
+        var hour = DateTime.Now.Hour;
+        Greeting.Text = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+        ShowHealth();
+        UpdateStats();
+
+        if (!_loaded)
         {
-            ("", "Processor", $"{SystemInfo.Cpu} · {SystemInfo.Threads} threads"),
-            ("", "Graphics", SystemInfo.GpuText),
-            ("", "Memory", Format.Bytes(SystemInfo.TotalRam, 0)),
-            ("", "Windows", SystemInfo.OsName),
-            ("", "System drive", $"{Format.Bytes(SystemInfo.SystemDrive.AvailableFreeSpace)} free of {Format.Bytes(SystemInfo.SystemDrive.TotalSize, 0)} · {SystemInfo.SystemDriveMedia}"),
-            ("", "Up time", FormatUptime(SystemInfo.Uptime)),
-        });
-        foreach (var (glyph, label, value) in specs) SpecGrid.Children.Add(Tile(glyph, label, value));
+            _loaded = true;
+            var (cpu, gpu, ram, os) = await Task.Run(() => (SystemInfo.Cpu, SystemInfo.GpuText, Format.Bytes(SystemInfo.TotalRam, 0), SystemInfo.OsName));
+            PcLine.Text = $"{os} · {cpu}";
+            CpuName.Text = cpu;
+            GpuName.Text = gpu;
+            RamName.Text = $"{ram} installed";
+        }
+
+        var games = await LatencyPlan.GamesAsync();
+        GamesLoading.Visibility = Visibility.Collapsed;
+        var real = games.Where(g => g.Game.Id != "other").ToList();
+        GameStrip.ItemsSource = real;
+        int installed = real.Count(g => g.Installed);
+        GameStat.Text = installed == 0 ? "None of the 7 found yet" : $"{installed} of {real.Count} installed";
     }
 
-    static string FormatUptime(TimeSpan t) =>
-        t.TotalDays >= 1 ? $"{(int)t.TotalDays} d {t.Hours} h" : $"{t.Hours} h {t.Minutes} min";
-
-    static FrameworkElement Tile(string glyph, string label, string value)
+    void UpdateStats()
     {
-        var g = new Grid { Margin = new Thickness(0, 6, 16, 6) };
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        g.ColumnDefinitions.Add(new ColumnDefinition());
-        var icon = new TextBlock { Text = glyph, Style = (Style)Application.Current.FindResource("IconText"), Foreground = (System.Windows.Media.Brush)Application.Current.FindResource("AccentBrush"), Margin = new Thickness(0, 2, 12, 0), VerticalAlignment = VerticalAlignment.Top };
-        var stack = new StackPanel();
-        stack.Children.Add(new TextBlock { Text = label, Style = (Style)Application.Current.FindResource("Label") });
-        stack.Children.Add(new TextBlock { Text = value, FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
-        Grid.SetColumn(stack, 1);
-        g.Children.Add(icon);
-        g.Children.Add(stack);
-        Anim.SetReveal(g, true);
-        return g;
+        var d = SystemInfo.SystemDrive;
+        DeclutterStat.Text = $"{Format.Bytes(d.AvailableFreeSpace)} free on {d.Name.TrimEnd('\\')}";
+        int n = TweakEngine.State.Applied.Count;
+        TweakStat.Text = n == 0 ? "None applied yet" : $"{n} applied, all undoable";
     }
 
     void UpdateLive()
     {
-        var cpu = _cpu.Sample();
-        var m = Native.Memory();
-        double used = m.ullTotalPhys - m.ullAvailPhys;
-        Anim.Bar(CpuBar, cpu);
-        Anim.Bar(RamBar, used / m.ullTotalPhys);
-        CpuText.Text = $"{cpu * 100:0}%";
-        RamText.Text = $"{Format.Bytes(used)} / {Format.Bytes(m.ullTotalPhys, 0)}";
+        if (LiveStats.Cpu.Count == 0) return;
+        CpuText.Text = $"{LiveStats.CpuNow * 100:0}%";
+        GpuText.Text = LiveStats.GpuNow is double g ? $"{g * 100:0}%" : "n/a";
+        RamText.Text = $"{LiveStats.RamNow * 100:0}%";
+        RamName.Text = $"{Format.Bytes(LiveStats.RamUsedBytes)} of {Format.Bytes(LiveStats.RamTotalBytes, 0)} in use";
+        CpuSpark.SetValues(LiveStats.Cpu);
+        GpuSpark.SetValues(LiveStats.Gpu);
+        RamSpark.SetValues(LiveStats.Ram);
     }
 
-    async void Run_Click(object sender, RoutedEventArgs e)
+    void ShowHealth()
     {
-        if (_running) return;
-        _running = true;
-        RunBtn.IsEnabled = false;
-        SummarySpinner.Visibility = Visibility.Visible;
-        SummaryRing.Visibility = Visibility.Hidden;
-        SummaryBig.Text = "…";
-        SummarySmall.Text = "checking";
-        ProgressText.Visibility = Visibility.Visible;
-        FindingsList.ItemsSource = null;
-
-        var progress = new Progress<string>(s => ProgressText.Text = s + "…");
-        List<Finding> findings;
-        try { findings = await Task.Run(() => PcDiagnostics.RunAll(progress)); }
-        finally
-        {
-            _running = false;
-            RunBtn.IsEnabled = true;
-            SummarySpinner.Visibility = Visibility.Collapsed;
-            SummaryRing.Visibility = Visibility.Visible;
-            ProgressText.Visibility = Visibility.Collapsed;
-            RunBtnText.Text = "Run again";
-        }
-
-        int ok = findings.Count(f => f.Severity == Severity.Ok);
-        int problems = findings.Count(f => f.Severity == Severity.Problem);
-        int checks = findings.Count(f => f.Severity == Severity.Check);
-        SummaryBig.Text = $"{ok}/{findings.Count}";
-        SummarySmall.Text = "checks look good";
-        SummaryRing.Value = 0;
-        SummaryRing.AnimateTo(findings.Count == 0 ? 0 : 100.0 * ok / findings.Count);
-        SummaryText.Text = problems == 0 && checks == 0
-            ? "No problems found. Your PC is set up well — tweaks will only make small differences from here."
-            : $"{problems} problem{(problems == 1 ? "" : "s")} and {checks} thing{(checks == 1 ? "" : "s")} worth checking, listed below with the most impactful first.";
-        FindingsHeader.Visibility = Visibility.Visible;
-        FindingsList.ItemsSource = findings;
+        var f = DiagnosePage.Last;
+        if (f == null || f.Count == 0) return;
+        int ok = f.Count(x => x.Severity == Severity.Ok);
+        var issues = f.Where(x => x.Severity is Severity.Problem or Severity.Check).OrderBy(x => x.Severity == Severity.Problem ? 0 : 1).ThenBy(x => x.Rank).ToList();
+        HealthBig.Text = $"{ok}/{f.Count}";
+        HealthSmall.Text = "checks pass";
+        HealthRing.Value = 0;
+        HealthRing.AnimateTo(100.0 * ok / f.Count);
+        HealthTitle.Text = issues.Count == 0 ? "Everything looks good" : $"{issues.Count} thing{(issues.Count == 1 ? "" : "s")} to fix";
+        HealthText.Text = issues.Count == 0 ? "No problems found in the last checkup." : "The biggest ones first:";
+        IssueList.ItemsSource = issues.Take(3).ToList();
+        HealthBtnText.Text = issues.Count == 0 ? "Run again" : "Fix these now";
     }
 
-    void FindingAction_Click(object sender, RoutedEventArgs e) =>
-        MainWindow.Instance.RunAction((sender as FrameworkElement)?.Tag as string);
+    void Health_Click(object sender, RoutedEventArgs e) =>
+        MainWindow.Instance.Navigate("diagnose", DiagnosePage.Last == null ? "run" : null);
 
-    async void Recommended_Click(object sender, RoutedEventArgs e) => await TweakRunner.ApplyRecommended();
-    void Measure_Click(object sender, RoutedEventArgs e) => MainWindow.Instance.Navigate("measure");
-    void Security_Click(object sender, RoutedEventArgs e) => MainWindow.Instance.Navigate("security");
+    void Tile_Click(object sender, RoutedEventArgs e) =>
+        MainWindow.Instance.Navigate((sender as FrameworkElement)?.Tag as string);
+
+    void Game_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is GameItem g) MainWindow.Instance.Navigate("games", g.Game.Id);
+    }
 }

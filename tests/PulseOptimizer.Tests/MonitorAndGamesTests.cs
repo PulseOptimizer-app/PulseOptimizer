@@ -100,10 +100,10 @@ public class MonitorAndGamesTests
     {
         var mon = Monitor(165, (2560, 1440, 165));
         var valorant = GameCatalog.All.First(g => g.Id == "valorant");
-        var lol = GameCatalog.All.First(g => g.Id == "lol");
+        var roblox = GameCatalog.All.First(g => g.Id == "roblox");
         Assert.Contains(LatencyPlan.Build(valorant, Nvidia, mon), s => s.Id == "reflex");
-        Assert.Contains(LatencyPlan.Build(lol, Nvidia, mon), s => s.Id == "ullm");
-        Assert.Contains(LatencyPlan.Build(lol, Amd, mon), s => s.Id == "antilag");
+        Assert.Contains(LatencyPlan.Build(roblox, Nvidia, mon), s => s.Id == "ullm");
+        Assert.Contains(LatencyPlan.Build(roblox, Amd, mon), s => s.Id == "antilag");
         var cs2 = GameCatalog.All.First(g => g.Id == "cs2");
         Assert.Contains(LatencyPlan.Build(cs2, Amd, mon), s => s.Id == "antilag2");
     }
@@ -128,6 +128,22 @@ public class MonitorAndGamesTests
             Assert.NotEmpty(g.Exes);
             Assert.NotEmpty(g.Matches);
             if (g.Reflex || g.AntiLag2) Assert.False(string.IsNullOrWhiteSpace(g.LatencySetting), g.Id);
+            Assert.NotEmpty(g.FpsSettings);
+            Assert.NotEmpty(g.Genres);
         });
+    }
+
+    [Fact]
+    public void Catalog_is_exactly_the_seven_supported_games()
+    {
+        Assert.Equal(new[] { "valorant", "cs2", "fortnite", "roblox", "overwatch", "rivals", "r6" }, GameCatalog.All.Select(g => g.Id));
+    }
+
+    [Fact]
+    public void Every_plan_includes_fps_advice()
+    {
+        var mon = Monitor(144, (1920, 1080, 144));
+        foreach (var g in GameCatalog.All.Append(GameCatalog.Generic))
+            Assert.Contains(LatencyPlan.Build(g, Nvidia, mon), s => s.Id == "fps");
     }
 }

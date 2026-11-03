@@ -135,6 +135,34 @@ public static class Native
         catch { return null; }
     }
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    static extern uint PrivateExtractIcons(string file, int index, int cx, int cy, IntPtr[] icons, uint[] ids, uint count, uint flags);
+
+    /// <summary>A file's icon at up to 256 px (games ship big icons; the shell's default is 32 px). Frozen, so any thread.</summary>
+    public static ImageSource LargeIcon(string path, int size = 256)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            int index = 0;
+            var comma = path.LastIndexOf(',');
+            if (comma > 2 && int.TryParse(path[(comma + 1)..], out var i)) { index = i; path = path[..comma]; }
+            path = path.Trim('"');
+            if (!File.Exists(path)) return null;
+            var icons = new IntPtr[1];
+            var ids = new uint[1];
+            if (PrivateExtractIcons(path, index, size, size, icons, ids, 1, 0) == 0 || icons[0] == IntPtr.Zero) return FileIcon(path);
+            try
+            {
+                var src = Imaging.CreateBitmapSourceFromHIcon(icons[0], Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                src.Freeze();
+                return src;
+            }
+            finally { DestroyIcon(icons[0]); }
+        }
+        catch { return null; }
+    }
+
     [DllImport("dwmapi.dll")]
     static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 

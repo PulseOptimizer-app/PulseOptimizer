@@ -175,3 +175,50 @@ public class InverseBool : IValueConverter
     public object Convert(object value, Type t, object p, CultureInfo c) => value is not true;
     public object ConvertBack(object value, Type t, object p, CultureInfo c) => value is not true;
 }
+
+/// <summary>A small filled line chart of the last few values (0..1).</summary>
+public class Sparkline : FrameworkElement
+{
+    public static readonly DependencyProperty BrushProperty = DependencyProperty.Register(nameof(Brush), typeof(Brush), typeof(Sparkline),
+        new FrameworkPropertyMetadata(Brushes.White, FrameworkPropertyMetadataOptions.AffectsRender));
+    public Brush Brush { get => (Brush)GetValue(BrushProperty); set => SetValue(BrushProperty, value); }
+
+    IReadOnlyList<double> _values = Array.Empty<double>();
+    public void SetValues(IReadOnlyList<double> values) { _values = values.ToArray(); InvalidateVisual(); }
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        double w = ActualWidth, h = ActualHeight;
+        if (w <= 0 || h <= 0 || _values.Count < 2) return;
+        int n = Pulse.Core.LiveStats.HistoryLength;
+        double step = w / (n - 1);
+        double x0 = w - step * (_values.Count - 1);
+        var line = new StreamGeometry();
+        var fill = new StreamGeometry();
+        Point P(int i) => new(x0 + i * step, h - 2 - Math.Clamp(_values[i], 0, 1) * (h - 4));
+        using (var c = line.Open())
+        {
+            c.BeginFigure(P(0), false, false);
+            for (int i = 1; i < _values.Count; i++) c.LineTo(P(i), true, true);
+        }
+        using (var c = fill.Open())
+        {
+            c.BeginFigure(new Point(x0, h), true, true);
+            for (int i = 0; i < _values.Count; i++) c.LineTo(P(i), false, false);
+            c.LineTo(new Point(w, h), false, false);
+        }
+        line.Freeze(); fill.Freeze();
+        var fillBrush = Brush.CloneCurrentValue();
+        fillBrush.Opacity = 0.14;
+        dc.DrawGeometry(fillBrush, null, fill);
+        dc.DrawGeometry(null, new Pen(Brush, 1.6) { LineJoin = PenLineJoin.Round }, line);
+    }
+}
+
+/// <summary>Visible when the first bool is true and the second false (an icon, but no cover art).</summary>
+public class IconOnlyVisibility : IMultiValueConverter
+{
+    public object Convert(object[] v, Type t, object p, CultureInfo c) =>
+        v.Length == 2 && v[0] is true && v[1] is not true ? Visibility.Visible : Visibility.Collapsed;
+    public object[] ConvertBack(object value, Type[] t, object p, CultureInfo c) => throw new NotSupportedException();
+}

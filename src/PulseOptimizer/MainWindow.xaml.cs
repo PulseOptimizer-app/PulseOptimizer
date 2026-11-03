@@ -54,6 +54,8 @@ public partial class MainWindow : Window
         Glow.BeginAnimation(OpacityProperty, new DoubleAnimation(0.45, 0.7, TimeSpan.FromSeconds(5))
         { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever, EasingFunction = new SineEase() });
 
+        LiveStats.Updated += UpdateMini;
+        LiveStats.Start();
         AbTest.ApplyRecordsToCatalog();
         UpdateSidebar();
         ShowPage("home");
@@ -69,6 +71,16 @@ public partial class MainWindow : Window
         SidebarStatus.Text = n == 0
             ? "No tweaks applied yet. Backups are kept for everything Pulse changes."
             : $"{n} tweak{(n == 1 ? "" : "s")} applied, each with a saved backup.";
+    }
+
+    void UpdateMini()
+    {
+        MiniCpu.Text = $"{LiveStats.CpuNow * 100:0}%";
+        MiniGpu.Text = LiveStats.GpuNow is double g ? $"{g * 100:0}%" : "n/a";
+        MiniRam.Text = $"{LiveStats.RamNow * 100:0}%";
+        Pulse.Ui.Anim.Bar(MiniCpuBar, LiveStats.CpuNow);
+        Pulse.Ui.Anim.Bar(MiniGpuBar, LiveStats.GpuNow ?? 0);
+        Pulse.Ui.Anim.Bar(MiniRamBar, LiveStats.RamNow);
     }
 
     // ───────── Navigation ─────────
@@ -100,6 +112,7 @@ public partial class MainWindow : Window
             page = key switch
             {
                 "home" => new HomePage(),
+                "diagnose" => new DiagnosePage(),
                 "tweaks" => new TweaksPage(),
                 "measure" => new MeasurePage(),
                 "games" => new GamesPage(),

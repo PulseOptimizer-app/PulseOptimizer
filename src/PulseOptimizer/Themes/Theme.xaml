@@ -9,17 +9,18 @@
     <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas</FontFamily>
 
     <!-- ═════════ Colors ═════════ -->
-    <Color x:Key="BgColor">#0A0D14</Color>
-    <Color x:Key="Bg2Color">#0E121B</Color>
-    <Color x:Key="SurfaceColor">#141926</Color>
-    <Color x:Key="Surface2Color">#1A2031</Color>
-    <Color x:Key="SurfaceHoverColor">#1E2538</Color>
-    <Color x:Key="BorderColor">#222A3D</Color>
-    <Color x:Key="TextColor">#E9EDF6</Color>
-    <Color x:Key="TextDimColor">#8C95AB</Color>
-    <Color x:Key="TextFaintColor">#5C6579</Color>
+    <Color x:Key="BgColor">#0B0C10</Color>
+    <Color x:Key="Bg2Color">#0F1117</Color>
+    <Color x:Key="SurfaceColor">#14161D</Color>
+    <Color x:Key="Surface2Color">#1A1D26</Color>
+    <Color x:Key="SurfaceHoverColor">#1F2330</Color>
+    <Color x:Key="BorderColor">#232733</Color>
+    <Color x:Key="TextColor">#ECEEF3</Color>
+    <Color x:Key="TextDimColor">#8B90A0</Color>
+    <Color x:Key="TextFaintColor">#5D6272</Color>
     <Color x:Key="AccentAColor">#22D3EE</Color>
     <Color x:Key="AccentBColor">#8B5CF6</Color>
+    <Color x:Key="AccentMidColor">#5B8CFF</Color>
 
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
     <SolidColorBrush x:Key="Bg2Brush" Color="{StaticResource Bg2Color}"/>
@@ -42,6 +43,7 @@
 
     <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="{StaticResource AccentAColor}" Offset="0"/>
+        <GradientStop Color="{StaticResource AccentMidColor}" Offset="0.5"/>
         <GradientStop Color="{StaticResource AccentBColor}" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="AccentGradientV" StartPoint="0,0" EndPoint="0,1">
@@ -58,6 +60,7 @@
     <ui:BoolToVisibility x:Key="BoolToVis"/>
     <ui:BoolToVisibility x:Key="InverseBoolToVis" Invert="True"/>
     <ui:InverseBool x:Key="InverseBool"/>
+    <ui:IconOnlyVisibility x:Key="IconOnlyVis"/>
     <ui:HasValueToVisibility x:Key="HasValueToVis"/>
     <ui:HasValueToVisibility x:Key="NoValueToVis" Invert="True"/>
     <ui:BoolToOpacity x:Key="BoolToOpacity"/>
@@ -115,13 +118,13 @@
         <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Padding" Value="20,18"/>
     </Style>
     <Style x:Key="HoverCard" TargetType="Border" BasedOn="{StaticResource Card}">
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="#33445E"/>
+                <Setter Property="BorderBrush" Value="#343A4C"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -318,8 +321,8 @@
 
     <!-- ═════════ Navigation ═════════ -->
     <Style x:Key="NavButton" TargetType="RadioButton">
-        <Setter Property="Height" Value="44"/>
-        <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Margin" Value="0,0,0,2"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Foreground" Value="{StaticResource TextDimBrush}"/>
@@ -566,6 +569,131 @@
                             </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Cursor" Value="Arrow"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!-- ═════════ Game tile (DataContext: GameItem) ═════════
+         Cover art when Steam has it, otherwise the game's own icon on a blurred copy of itself, otherwise its colors.
+         Hover lifts and zooms the art; Running shows a live badge. -->
+    <Style x:Key="GameTile" TargetType="Button">
+        <Setter Property="Width" Value="128"/>
+        <Setter Property="Height" Value="172"/>
+        <Setter Property="Margin" Value="0,0,14,14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="Sc"/>
+                                <TranslateTransform x:Name="Lift"/>
+                            </TransformGroup>
+                        </Grid.RenderTransform>
+                        <Border x:Name="Shadow" CornerRadius="12" Background="#000000" Opacity="0" Margin="4,10,4,-6">
+                            <Border.Effect><BlurEffect Radius="18"/></Border.Effect>
+                        </Border>
+                        <Border x:Name="Card" CornerRadius="12" Background="{Binding Tint}" ClipToBounds="True">
+                            <Border.Clip>
+                                <RectangleGeometry Rect="0,0,128,172" RadiusX="12" RadiusY="12"/>
+                            </Border.Clip>
+                            <Grid>
+                                <!-- Blurred icon fills the tile behind the sharp one -->
+                                <Image Source="{Binding Icon}" Stretch="UniformToFill" Opacity="0.55" Margin="-30"
+                                       Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}">
+                                    <Image.Effect><BlurEffect Radius="34"/></Image.Effect>
+                                </Image>
+                                <Image x:Name="Art" Source="{Binding CoverImage}" Stretch="UniformToFill" RenderTransformOrigin="0.5,0.5"
+                                       Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                    <Image.RenderTransform><ScaleTransform x:Name="ArtSc"/></Image.RenderTransform>
+                                </Image>
+                                <Border Width="64" Height="64" CornerRadius="14" VerticalAlignment="Top" Margin="0,30,0,0" ClipToBounds="True">
+                                    <Border.Visibility>
+                                        <MultiBinding Converter="{StaticResource IconOnlyVis}">
+                                            <Binding Path="HasIcon"/>
+                                            <Binding Path="HasCover"/>
+                                        </MultiBinding>
+                                    </Border.Visibility>
+                                    <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                </Border>
+                                <TextBlock Text="{Binding Short}" FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="Bold" Foreground="#F2FFFFFF"
+                                           HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,48,0,0"
+                                           Visibility="{Binding ShowLetters, Converter={StaticResource BoolToVis}}"/>
+                                <!-- Bottom shade + name -->
+                                <Border VerticalAlignment="Bottom" Height="76">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#00000000" Offset="0"/>
+                                            <GradientStop Color="#D9000000" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                                <StackPanel VerticalAlignment="Bottom" Margin="10,0,10,10">
+                                    <TextBlock Text="{Binding Name}" Foreground="White" FontWeight="SemiBold" FontSize="12.5" TextWrapping="Wrap" MaxHeight="34"/>
+                                    <TextBlock Text="{Binding StatusText}" Foreground="#B3FFFFFF" FontSize="10.5" Margin="0,1,0,0"/>
+                                </StackPanel>
+                                <!-- Running badge -->
+                                <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" CornerRadius="6" Padding="6,2,7,3" Background="#CC0B0C10"
+                                        Visibility="{Binding Running, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{StaticResource GoodBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Running" Foreground="White" FontSize="10.5" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border x:Name="Ring" CornerRadius="12" BorderThickness="2" BorderBrush="{StaticResource AccentGradient}" Opacity="0"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Lift" Storyboard.TargetProperty="Y" To="-5" Duration="0:0:0.22"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.45"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.45"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="Shadow" Storyboard.TargetProperty="Opacity" To="0.6" Duration="0:0:0.22"/>
+                                    <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.22"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Lift" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.25"/>
+                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.35"/>
+                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.35"/>
+                                    <DoubleAnimation Storyboard.TargetName="Shadow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25"/>
+                                    <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleX" To="0.96" Duration="0:0:0.08"/>
+                                    <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleY" To="0.96" Duration="0:0:0.08"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18"/>
+                                    <DoubleAnimation Storyboard.TargetName="Sc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Running}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard><Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                    <DoubleAnimation Storyboard.TargetName="LiveDot" Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:0.8"/>
+                                </Storyboard></BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Dim}" Value="True">
+                            <Setter TargetName="Card" Property="Opacity" Value="0.55"/>
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
