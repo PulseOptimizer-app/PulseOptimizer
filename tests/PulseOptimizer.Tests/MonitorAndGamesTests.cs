@@ -141,7 +141,7 @@ public class MonitorAndGamesTests
                                    "thefinals", "pubg", "bf6", "deltaforce", "halo", "hunt", "dota2", "lol", "sf6", "tekken8", "trackmania", "f125" })
             Assert.Contains(id, ids);
         Assert.DoesNotContain(GameCatalog.All, g => g.Name == "Minecraft");
-        Assert.All(GameCatalog.All, g => Assert.False(string.IsNullOrWhiteSpace(g.ProSource), g.Id));
+        Assert.All(GameCatalog.All.Where(g => g.Id != "roblox"), g => Assert.False(string.IsNullOrWhiteSpace(g.ProSource), g.Id)); // Roblox has no pro scene; its FPS step covers it
     }
 
     [Fact]
