@@ -24,7 +24,7 @@ if not exist "src\PulseOptimizer\tools\PresentMon.exe" (
 rem ---- 3. Build one self-contained exe ----
 echo Building...
 "%DOTNET%" publish src\PulseOptimizer\PulseOptimizer.csproj -c Release -r win-x64 --self-contained true ^
-  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o dist
 if errorlevel 1 goto :fail
 
 echo.
