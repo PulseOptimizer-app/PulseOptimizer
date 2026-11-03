@@ -51,7 +51,7 @@ public partial class HomePage : UserControl, IPage
         var real = games.Where(g => g.Game.Id != "other").ToList();
         GameStrip.ItemsSource = real;
         int installed = real.Count(g => g.Installed);
-        GameStat.Text = installed == 0 ? "None of the 7 found yet" : $"{installed} of {real.Count} installed";
+        GameStat.Text = installed == 0 ? "None of these found yet" : $"{installed} of {real.Count} installed";
     }
 
     void UpdateStats()

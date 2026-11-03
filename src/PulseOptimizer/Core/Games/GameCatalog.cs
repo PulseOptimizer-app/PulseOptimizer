@@ -17,7 +17,14 @@ public record KnownGame(
     string ProSource = "",
     string Color1 = "#3B4256",
     string Color2 = "#1A1D26",
-    string Note = "");
+    string Note = "")
+{
+    /// <summary>True when an installed program's name is this game ("Rust" matches "Rust", not "RustDesk").</summary>
+    public bool IsNamed(string installedName) =>
+        !string.IsNullOrEmpty(installedName) && Matches.Any(m =>
+            System.Text.RegularExpressions.Regex.IsMatch(installedName, @"(^|[^\p{L}\p{N}])" + System.Text.RegularExpressions.Regex.Escape(m) + @"($|[^\p{L}\p{N}])",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+}
 
 /// <summary>
 /// The games Pulse has checklists for. Reflex support comes from NVIDIA's game list; Anti-Lag 2 from AMD's
@@ -161,6 +168,107 @@ public static class GameCatalog
             },
             ProSource: "siege.gg settings guide and pro configs",
             Genres: new[] { "shooter", "tactical", "competitive" }, Color1: "#8592A6", Color2: "#1D232E"),
+        new("apex", "Apex Legends", "AL", new[] { "r5apex.exe", "r5apex_dx12.exe" }, new[] { "Apex Legends" },
+            Reflex: true, AntiLag2: false,
+            LatencySetting: "Settings → Video → NVIDIA Reflex",
+            FullscreenSetting: "Settings → Video → Display Mode → Full Screen",
+            FpsSettings: new[]
+            {
+                "Texture Streaming Budget: Medium or lower if your card has under 8 GB of memory.",
+                "Sun Shadow Coverage and Detail: Low; Spot Shadow Detail, Dynamic Spot Shadows and Volumetric Lighting: Disabled. Shadows cost the most here.",
+                "Adaptive Resolution FPS Target: 0 (off), so the image doesn't go blurry mid-fight.",
+            },
+            Genres: new[] { "battle royale", "hero shooter", "shooter" },
+            ProSettings: new[]
+            {
+                "Display Mode: Full Screen at native resolution (77% of pros play 1920×1080) · V-Sync: Off · NVIDIA Reflex: Enabled + Boost.",
+                "Field of View: 110 (over half of pros) · FOV Ability Scaling: Disabled · Sprint View Shake: Minimal.",
+                "Anti-Aliasing: None · Texture Filtering: Anisotropic 2x · Ambient Occlusion: Disabled · Model, Effects Detail, Impact Marks, Ragdolls: Low.",
+                "Mouse: 800 DPI is most common (63%), then 1600 and 400; no pro uses over 2500. ADS sensitivity multiplier: 1.",
+            },
+            ProSource: "ProSettings.net Apex Legends guide and pro data, 2026",
+            Color1: "#DA292A", Color2: "#3A0B0B"),
+        new("cod", "Call of Duty", "COD", new[] { "cod.exe" }, new[] { "Call of Duty" },
+            Reflex: true, AntiLag2: false,
+            LatencySetting: "Settings → Graphics → Display → NVIDIA Reflex Low Latency",
+            FullscreenSetting: "Settings → Graphics → Display → Display Mode → Fullscreen Exclusive",
+            FpsSettings: new[]
+            {
+                "On-Demand Texture Streaming: Minimal. It downloads textures while you play and can cost frames and bandwidth.",
+                "Screen Space Shadows, Ambient Occlusion, Screen Space Reflections, Tessellation and Volumetric Quality: Off or Low.",
+                "Upscaling: FidelityFX CAS sharpening at 100% render resolution; use DLSS Quality only if you need the frames.",
+            },
+            Genres: new[] { "shooter", "battle royale", "competitive" },
+            Note: "Covers Warzone and the current Call of Duty (Black Ops 7, and Modern Warfare 4 from October 23). They share the same settings menus.",
+            ProSettings: new[]
+            {
+                "Display Mode: Fullscreen Exclusive · Refresh rate and resolution: your monitor's maximum · NVIDIA Reflex: On + Boost · V-Sync (Gameplay and Menus): Off.",
+                "Custom Frame Rate Limit: your refresh rate · Render Resolution: 100 · Dynamic Resolution: Off · FidelityFX CAS: On, strength about 85.",
+                "Texture Resolution: Low · Detail and Shader Quality: Low · Particle Resolution: Very Low · Shadow Quality: Normal · Depth of Field: Off.",
+                "Field of View: 100–115 · ADS Field of View: Affected · Weapon Field of View: Wide · World and Weapon Motion Blur: Off · Film Grain: 0.",
+                "1st and 3rd Person Camera Movement: Least (50%) · Inverted Flashbang: On.",
+            },
+            ProSource: "CharlieIntel's Warzone PC settings guide",
+            Color1: "#3E7F3E", Color2: "#0E1A10"),
+        new("arcraiders", "ARC Raiders", "ARC", new[] { "PioneerGame.exe" }, new[] { "ARC Raiders" },
+            Reflex: true, AntiLag2: false,
+            LatencySetting: "Settings → Video → NVIDIA Reflex (AMD: AMD Anti-Lag)",
+            FullscreenSetting: "Settings → Video → Window Mode → Fullscreen",
+            FpsSettings: new[]
+            {
+                "NVIDIA RTX Global Illumination: Static. The dynamic setting costs a lot of frames.",
+                "Foliage: Low; Shadows, Effects and Post Processing: Medium.",
+                "Upscaling: NVIDIA DLSS (or FSR 3 on AMD) on Quality or Balanced if you need frames.",
+            },
+            Genres: new[] { "shooter", "survival", "co-op" },
+            ProSettings: new[]
+            {
+                "Display Resolution: native · V-Sync: Off · AMD Anti-Lag / NVIDIA Reflex: On · Frame Rate Limit: your refresh rate (or uncapped).",
+                "Upscaled Resolution: 100% · Field of View: 80 · Motion Blur: Off · View Distance: High.",
+                "Anti-Aliasing, Shadows, Effects, Post Processing, Global Illumination Resolution: Medium · Textures: High (lower on low-memory cards) · Foliage: Low.",
+                "Mouse Smoothing: Off · Accessibility → Invert Flash Color: On.",
+            },
+            ProSource: "ProSettings.net ARC Raiders guide",
+            Color1: "#E7B53B", Color2: "#2E2410"),
+        new("rust", "Rust", "R", new[] { "RustClient.exe" }, new[] { "Rust" },
+            Reflex: true, AntiLag2: false,
+            LatencySetting: "Options → Graphics → NVIDIA Reflex",
+            FullscreenSetting: "Options → Screen → Fullscreen",
+            FpsSettings: new[]
+            {
+                "Grass Quality, Decor Quality, Particle Quality: 0 · Grass Shadows: Off · Water Quality and Reflections: Off.",
+                "Shadow Quality: 1 with 2 cascades, or off on weaker PCs · Draw Distance: about 1600.",
+                "Install Rust on an SSD: it streams the map from disk and stutters on a hard drive.",
+            },
+            Genres: new[] { "survival", "shooter" },
+            ProSettings: new[]
+            {
+                "Render Scale: 1.0 · Shader Level: 3 · NVIDIA Reflex: On + Boost · DLSS: Off · Volumetric Clouds: Off.",
+                "Texture Quality: Half-Resolution · Anisotropic Filtering: Disabled · Pixel Light Count: 0 · Max Gibs: 0.",
+                "Field of View: 90 · Hurt Flash: Off · Show Blood: On.",
+                "Steam launch options: -high -graphics.branding 0 -player.eye_blinking false -player.eye_movement false",
+            },
+            ProSource: "Dignitas' Rust PvP settings guide",
+            Color1: "#CD412B", Color2: "#2E0F0A"),
+        new("rocketleague", "Rocket League", "RL", new[] { "RocketLeague.exe" }, new[] { "Rocket League" },
+            Reflex: false, AntiLag2: false,
+            LatencySetting: "",
+            FullscreenSetting: "Settings → Video → Display Mode → Fullscreen",
+            FpsSettings: new[]
+            {
+                "Render Quality: High Performance and Render Detail: Performance on weaker PCs; the game runs well on almost anything.",
+                "Frame Rate: Uncapped or at your refresh rate · V-Sync: Off.",
+            },
+            Genres: new[] { "sports", "competitive", "casual" },
+            ProSettings: new[]
+            {
+                "Camera Shake: Off · Field of View: 110 (some use 109).",
+                "Distance: 260–280 (270 is most common) · Height: 90–110 (100 is most common) · Angle: -3 to -5.",
+                "Stiffness: 0.35–0.70 (low) · Swivel Speed: about 4–7 · Transition Speed: whatever feels right.",
+                "Copied from top pros like Zen (110 FOV, 100 height, 270 distance, 0.35 stiffness, 4.0 swivel).",
+            },
+            ProSource: "esports.net's pro camera settings table",
+            Color1: "#2E7FD8", Color2: "#0B1E3A"),
     };
 
     /// <summary>The plan used for any game Pulse doesn't have notes for.</summary>

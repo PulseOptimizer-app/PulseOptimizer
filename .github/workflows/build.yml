@@ -34,6 +34,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: ./tools/get-presentmon.ps1 -Out src/PulseOptimizer/tools/PresentMon.exe
 
+      - name: Get game cover art from Steam's store (embedded; the app never goes online)
+        shell: pwsh
+        run: python tools/get-game-art.py src/PulseOptimizer/Assets/Games
+
       - name: Build single-file exe
         shell: pwsh
         run: |

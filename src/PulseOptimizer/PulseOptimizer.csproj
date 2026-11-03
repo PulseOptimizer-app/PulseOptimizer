@@ -29,6 +29,8 @@
   <ItemGroup>
     <Resource Include="app.ico" />
     <Resource Include="Assets\logo-128.png" />
+    <!-- Game covers fetched by tools/get-game-art.py at build time (not committed). -->
+    <Resource Include="Assets\Games\*.jpg" />
     <!-- PresentMon (Intel, MIT) is downloaded here by the build and carried inside the exe, so the release is one file. -->
     <EmbeddedResource Include="tools\PresentMon.exe" Condition="Exists('tools\PresentMon.exe')" LogicalName="PresentMon.exe" />
   </ItemGroup>

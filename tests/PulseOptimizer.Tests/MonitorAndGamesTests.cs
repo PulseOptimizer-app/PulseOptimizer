@@ -134,9 +134,9 @@ public class MonitorAndGamesTests
     }
 
     [Fact]
-    public void Catalog_is_exactly_the_seven_supported_games()
+    public void Catalog_is_exactly_the_supported_games()
     {
-        Assert.Equal(new[] { "valorant", "cs2", "fortnite", "roblox", "overwatch", "rivals", "r6" }, GameCatalog.All.Select(g => g.Id));
+        Assert.Equal(new[] { "valorant", "cs2", "fortnite", "roblox", "overwatch", "rivals", "r6", "apex", "cod", "arcraiders", "rust", "rocketleague" }, GameCatalog.All.Select(g => g.Id));
     }
 
     [Fact]
@@ -146,4 +146,14 @@ public class MonitorAndGamesTests
         foreach (var g in GameCatalog.All.Append(GameCatalog.Generic))
             Assert.Contains(LatencyPlan.Build(g, Nvidia, mon), s => s.Id == "fps");
     }
+
+    [Theory]
+    [InlineData("rust", "Rust", true)]
+    [InlineData("rust", "RustDesk", false)]
+    [InlineData("rust", "Trusted Platform Module", false)]
+    [InlineData("cod", "Call of Duty®", true)]
+    [InlineData("r6", "Tom Clancy's Rainbow Six® Siege X", true)]
+    [InlineData("apex", "Apex Legends", true)]
+    public void Installed_game_names_match_whole_words(string id, string installed, bool expected) =>
+        Assert.Equal(expected, GameCatalog.All.First(g => g.Id == id).IsNamed(installed));
 }

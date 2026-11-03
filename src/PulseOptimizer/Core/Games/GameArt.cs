@@ -33,14 +33,51 @@ public static class GameArt
         return b;
     }
 
-    /// <summary>Finds the icon and cover for one game. Slow-ish (disk), so call off the UI thread.</summary>
-    public static (ImageSource icon, ImageSource cover) Find(KnownGame g)
+    /// <summary>
+    /// Finds the icon and cover for one game. Cover: Steam's own cache on this PC, else the cover embedded at build time.
+    /// Icon: from the installed game. Slow-ish (disk), so call off the UI thread.
+    /// </summary>
+    public static (ImageSource icon, ImageSource cover) Find(KnownGame g, bool installed)
     {
         if (g.Id == "other") return (null, null);
         ImageSource cover = null, icon = null;
-        try { cover = SteamCover(g); } catch { }
-        try { icon = Native.LargeIcon(ExePath(g)) ?? Native.LargeIcon(UninstallIcon(g)); } catch { }
+        if (installed)
+        {
+            try { cover = SteamCover(g); } catch { }
+            try { icon = Native.LargeIcon(ExePath(g)) ?? Native.LargeIcon(UninstallIcon(g)); } catch { }
+        }
+        cover ??= Bundled(g.Name);
         return (icon, cover);
+    }
+
+    static readonly Dictionary<string, ImageSource> BundledCache = new();
+
+    /// <summary>Cover art embedded by tools/get-game-art.py (keyed by the game's name, letters and digits only).</summary>
+    public static ImageSource Bundled(string name)
+    {
+        var key = new string((name ?? "").ToLowerInvariant().Where(char.IsAsciiLetterOrDigit).ToArray());
+        lock (BundledCache)
+        {
+            if (BundledCache.TryGetValue(key, out var img)) return img;
+            try
+            {
+                var uri = new Uri($"pack://application:,,,/Assets/Games/{key}.jpg", UriKind.Absolute);
+                using var stream = Application.GetResourceStream(uri)?.Stream;
+                if (stream != null)
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.StreamSource = stream;
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.DecodePixelWidth = 300;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    img = bmp;
+                }
+            }
+            catch { img = null; }
+            return BundledCache[key] = img;
+        }
     }
 
     static ImageSource SteamCover(KnownGame g)
@@ -79,7 +116,7 @@ public static class GameArt
         var opts = new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 5, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint };
         foreach (var (name, folder) in PcDiagnostics.LauncherGames())
         {
-            if (!g.Matches.Any(m => name.Contains(m, StringComparison.OrdinalIgnoreCase)) || !Directory.Exists(folder)) continue;
+            if (!g.IsNamed(name) || !Directory.Exists(folder)) continue;
             foreach (var exe in g.Exes)
             {
                 var hit = Directory.EnumerateFiles(folder, exe, opts).FirstOrDefault();
@@ -121,7 +158,7 @@ public static class GameArt
             foreach (var sub in Reg.SubKeys(hive, path))
             {
                 var k = $@"{path}\{sub}";
-                if (Reg.Get(hive, k, "DisplayName") is not string dn || !g.Matches.Any(m => dn.Contains(m, StringComparison.OrdinalIgnoreCase))) continue;
+                if (Reg.Get(hive, k, "DisplayName") is not string dn || !g.IsNamed(dn)) continue;
                 if (Reg.Get(hive, k, value) is string v && v.Length > 0) yield return Environment.ExpandEnvironmentVariables(v);
             }
         }

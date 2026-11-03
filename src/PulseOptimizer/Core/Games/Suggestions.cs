@@ -5,6 +5,8 @@ public record Suggestion(string Name, string Why, string[] Genres, bool Free, st
     public string Link => Url ?? "https://store.steampowered.com/search/?term=" + Uri.EscapeDataString(Name);
     public string Initials => string.Concat(Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetterOrDigit(w[0])).Take(2).Select(w => char.ToUpperInvariant(w[0])));
     public string PriceText => Free ? "Free to play" : "Paid";
+    public System.Windows.Media.ImageSource Cover => GameArt.Bundled(Name);
+    public bool HasCover => Cover != null;
     public string GenreText => string.Join(" · ", Genres.Take(2).Select(g => char.ToUpperInvariant(g[0]) + g[1..]));
 }
 

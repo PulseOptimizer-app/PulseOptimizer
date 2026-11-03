@@ -580,8 +580,8 @@
          Dark card with a soft glow in the game's color, its real icon floating in the middle (or Steam cover art,
          full-bleed), name and status underneath. Hover lifts the card, brightens the glow and grows the icon. -->
     <Style x:Key="GameTile" TargetType="Button">
-        <Setter Property="Width" Value="132"/>
-        <Setter Property="Height" Value="176"/>
+        <Setter Property="Width" Value="140"/>
+        <Setter Property="Height" Value="200"/>
         <Setter Property="Margin" Value="0,0,14,14"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -600,7 +600,7 @@
                         </Border>
                         <Border x:Name="Card" CornerRadius="14" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                             <Grid>
-                                <Grid.Clip><RectangleGeometry Rect="0,0,130,174" RadiusX="13" RadiusY="13"/></Grid.Clip>
+                                <Grid.Clip><RectangleGeometry Rect="0,0,138,198" RadiusX="13" RadiusY="13"/></Grid.Clip>
                                 <!-- Color glow -->
                                 <Ellipse x:Name="Glow" Width="230" Height="190" VerticalAlignment="Top" Margin="0,-70,0,0" Fill="{Binding Glow}" Opacity="0.75"/>
                                 <!-- Steam cover art, full-bleed -->
@@ -608,16 +608,17 @@
                                        Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
                                     <Image.RenderTransform><ScaleTransform x:Name="ArtSc"/></Image.RenderTransform>
                                 </Image>
-                                <Border VerticalAlignment="Bottom" Height="90" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                <Border VerticalAlignment="Bottom" Height="110" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
                                     <Border.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop Color="#000B0C10" Offset="0"/>
-                                            <GradientStop Color="#F00B0C10" Offset="0.85"/>
+                                            <GradientStop Color="#B30B0C10" Offset="0.45"/>
+                                            <GradientStop Color="#F70B0C10" Offset="1"/>
                                         </LinearGradientBrush>
                                     </Border.Background>
                                 </Border>
                                 <!-- Icon (or letters) floating in the middle -->
-                                <Grid x:Name="Badge" Width="68" Height="68" VerticalAlignment="Top" Margin="0,30,0,0" RenderTransformOrigin="0.5,0.5"
+                                <Grid x:Name="Badge" Width="68" Height="68" VerticalAlignment="Top" Margin="0,40,0,0" RenderTransformOrigin="0.5,0.5"
                                       Visibility="{Binding HasCover, Converter={StaticResource InverseBoolToVis}}">
                                     <Grid.RenderTransform><ScaleTransform x:Name="BadgeSc"/></Grid.RenderTransform>
                                     <Grid.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="6" Direction="270" Opacity="0.5" Color="Black"/></Grid.Effect>
@@ -692,6 +693,7 @@
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Dim}" Value="True">
                             <Setter TargetName="Badge" Property="Opacity" Value="0.4"/>
+                            <Setter TargetName="Art" Property="Opacity" Value="0.5"/>
                             <Setter TargetName="Glow" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="StatusDot" Property="Fill" Value="{StaticResource TextFaintBrush}"/>
                         </DataTrigger>

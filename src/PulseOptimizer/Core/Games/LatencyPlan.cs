@@ -19,7 +19,7 @@ public class GameItem : Observable
     int _done, _total;
     public int Done { get => _done; set { if (Set(ref _done, value)) Raise(nameof(ProgressText)); } }
     public int Total { get => _total; set { if (Set(ref _total, value)) Raise(nameof(ProgressText)); } }
-    public string ProgressText => Total == 0 ? "" : $"{Done}/{Total} done";
+    public string ProgressText => Total == 0 || !Installed ? "" : Done >= Total ? "✓ Done" : $"{Done}/{Total}";
 
     public string StatusText => Game.Id == "other" ? "Steps for any game" : Running ? "Running now" : Installed ? "Installed" : "Not installed";
     public bool Dim => !Installed && Game.Id != "other";
@@ -72,9 +72,9 @@ public static class LatencyPlan
         var list = new List<GameItem>();
         foreach (var g in GameCatalog.All)
         {
-            bool installed = names.Any(n => g.Matches.Any(m => n.Contains(m, StringComparison.OrdinalIgnoreCase)));
+            bool installed = names.Any(g.IsNamed);
             bool isRunning = g.Exes.Any(running.Contains);
-            var (icon, cover) = installed || isRunning ? GameArt.Find(g) : (null, null);
+            var (icon, cover) = GameArt.Find(g, installed || isRunning);
             list.Add(new GameItem { Game = g, Installed = installed || isRunning, Running = isRunning, Icon = icon, CoverImage = cover });
         }
         // Running first, then installed, then the rest, keeping the catalog's order within each group.

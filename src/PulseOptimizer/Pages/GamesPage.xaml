@@ -39,9 +39,16 @@
                             <Border Style="{StaticResource HoverCard}" Margin="0,0,10,10" Padding="16,14" ui:Anim.Reveal="True">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <Border Width="44" Height="44" CornerRadius="10" Background="{StaticResource AccentGradient}" VerticalAlignment="Top">
-                                        <TextBlock Text="{Binding Initials}" Foreground="White" FontWeight="Bold" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
+                                    <Grid Width="52" Height="74" VerticalAlignment="Top">
+                                        <Border CornerRadius="8" Background="{StaticResource Surface2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                                Visibility="{Binding HasCover, Converter={StaticResource InverseBoolToVis}}">
+                                            <TextBlock Text="{Binding Initials}" Foreground="{StaticResource TextDimBrush}" FontWeight="SemiBold" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <Border CornerRadius="8" ClipToBounds="True" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                            <Border.Clip><RectangleGeometry Rect="0,0,52,74" RadiusX="8" RadiusY="8"/></Border.Clip>
+                                            <Image Source="{Binding Cover}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                    </Grid>
                                     <StackPanel Grid.Column="1" Margin="14,0,10,0">
                                         <TextBlock Text="{Binding Name}" Style="{StaticResource CardTitle}"/>
                                         <TextBlock FontSize="11.5" Foreground="{StaticResource TextFaintBrush}" Margin="0,1,0,0">
