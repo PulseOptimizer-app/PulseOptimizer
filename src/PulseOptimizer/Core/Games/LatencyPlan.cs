@@ -1,3 +1,4 @@
+using System.Windows.Media;
 using System.Diagnostics;
 using Microsoft.Win32;
 using Pulse.Ui;
@@ -21,8 +22,9 @@ public class GameItem : Observable
     public int Total { get => _total; set { if (Set(ref _total, value)) Raise(nameof(ProgressText)); } }
     public string ProgressText => Total == 0 || !Installed ? "" : Done >= Total ? "✓ Done" : $"{Done}/{Total}";
 
-    public string StatusText => Game.Id == "other" ? "Steps for any game" : Running ? "Running now" : Installed ? "Installed" : "Not installed";
-    public bool Dim => !Installed && Game.Id != "other";
+    public string StatusText => Game.IsAddTile ? "Pick one from your PC" : Game.Id == "other" ? "Steps for any game" : Running ? "Running now" : !Installed ? (Game.IsCustom ? "Can't find its .exe" : "Not installed") : Game.IsCustom ? "Added by you" : "Installed";
+    public bool Dim => !Installed && !Game.IsAddTile && Game.Id != "other";
+    public CustomGame Custom { get; init; }
     public string Short => Game.Short;
     public System.Windows.Media.Brush Tint => GameArt.Tint(Game);
     public System.Windows.Media.Brush Glow => GameArt.Glow(Game);
@@ -78,8 +80,17 @@ public static class LatencyPlan
             list.Add(new GameItem { Game = g, Installed = installed || isRunning, Running = isRunning, Icon = icon, CoverImage = cover });
         }
         // Running first, then installed, then the rest, keeping the catalog's order within each group.
+        // Games the user added themselves.
+        foreach (var c in TweakEngine.State.CustomGames.ToList())
+        {
+            var g = GameCatalog.Custom(c);
+            bool exists = !string.IsNullOrEmpty(c.Exe) && File.Exists(c.Exe);
+            ImageSource icon = null;
+            try { icon = exists ? Native.LargeIcon(c.Exe) : null; } catch { }
+            list.Add(new GameItem { Game = g, Custom = c, Installed = exists, Running = g.Exes.Any(running.Contains), Icon = icon, CoverImage = GameArt.Bundled(c.Name) });
+        }
         list = list.OrderByDescending(i => i.Running).ThenByDescending(i => i.Installed).ToList();
-        list.Add(new GameItem { Game = GameCatalog.Generic });
+        list.Add(new GameItem { Game = GameCatalog.AddTile });
         return list;
     }
 
@@ -145,7 +156,7 @@ public static class LatencyPlan
             {
                 Id = "ullm", Done = T("ullm"),
                 Title = "Set Low Latency Mode to Ultra for this game",
-                Detail = g.Id == "other"
+                Detail = g.IsGeneric
                     ? "If the game has NVIDIA Reflex, use that instead. Otherwise: NVIDIA Control Panel → Manage 3D settings → Program Settings → add the game → Low Latency Mode → Ultra → Apply. (Doesn't work in Vulkan games.)"
                     : $"{g.Name} doesn't have NVIDIA Reflex, so this is NVIDIA's next-best option: NVIDIA Control Panel → Manage 3D settings → Program Settings → add {g.Name} → Low Latency Mode → Ultra → Apply.",
             });
@@ -165,7 +176,7 @@ public static class LatencyPlan
             });
 
         // 3. Fullscreen.
-        if (g.FullscreenSetting.Length > 0 || g.Id == "other")
+        if (g.FullscreenSetting.Length > 0 || g.IsGeneric)
             steps.Add(new PlanStep
             {
                 Id = "fullscreen", Done = T("fullscreen"),
@@ -227,12 +238,12 @@ public static class LatencyPlan
             steps.Add(new PlanStep
             {
                 Id = "fps", Done = T("fps"),
-                Title = pro.Length > 0 ? $"Use the settings pros use in {g.Name}" : g.Id == "other" ? "Lower the settings that cost the most FPS" : $"Get more FPS in {g.Name}",
+                Title = pro.Length > 0 ? $"Use the settings pros use in {g.Name}" : g.IsGeneric ? "Lower the settings that cost the most FPS" : $"Get more FPS in {g.Name}",
                 Detail = string.Join("\n\n", parts),
             });
         }
 
-        if (g.Note.Length > 0 && g.Id != "other")
+        if (g.Note.Length > 0 && !g.IsGeneric)
             steps.Add(new PlanStep { Id = "note", Done = T("note"), Title = $"{g.Name} tip", Detail = g.Note });
 
         return steps;

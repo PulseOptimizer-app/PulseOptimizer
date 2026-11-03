@@ -156,4 +156,17 @@ public class MonitorAndGamesTests
     [InlineData("apex", "Apex Legends", true)]
     public void Installed_game_names_match_whole_words(string id, string installed, bool expected) =>
         Assert.Equal(expected, GameCatalog.All.First(g => g.Id == id).IsNamed(installed));
+
+    [Fact]
+    public void Added_games_get_the_general_checklist_under_their_own_name()
+    {
+        var g = GameCatalog.Custom(new CustomGame { Name = "Deadlock", Exe = @"C:\Games\Deadlock\game\bin\win64\project8.exe" });
+        Assert.True(g.IsCustom && g.IsGeneric && !g.IsAddTile);
+        Assert.Equal("custom:deadlock", g.Id);
+        Assert.Equal(new[] { "project8.exe" }, g.Exes);
+        Assert.Equal("D", g.Short);
+        var steps = LatencyPlan.Build(g, Nvidia, Monitor(144, (1920, 1080, 144)));
+        Assert.Contains(steps, s => s.Id == "ullm");
+        Assert.Contains(steps, s => s.Id == "fps" && s.Title == "Lower the settings that cost the most FPS");
+    }
 }

@@ -70,7 +70,8 @@
         <!-- ═════════ One game ═════════ -->
         <ScrollViewer x:Name="DetailView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel x:Name="PlanPanel" Margin="0,0,0,36">
-                <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Click="Back_Click">
+                <Button x:Name="RemoveGameBtn" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Content="Remove from my games" Click="RemoveGame_Click" Visibility="Collapsed"/>
+                <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Click="Back_Click" Margin="0,-22,0,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE72B;" Style="{StaticResource IconText}" FontSize="12"/>
                         <TextBlock Text="All games" Margin="8,0,0,0"/>
@@ -229,5 +230,67 @@
                     </Border>
             </StackPanel>
         </ScrollViewer>
+
+        <!-- ═════════ Add a game ═════════ -->
+        <Grid x:Name="Picker" Visibility="Collapsed" Background="#B30B0C10" Margin="-36,-6,-36,0">
+            <Border Style="{StaticResource Card}" Width="560" MaxHeight="620" Padding="24,22" Background="{StaticResource Surface2Brush}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="8" Opacity="0.5" Color="Black"/></Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Add a game"/>
+                        <TextBlock Style="{StaticResource Body}" Margin="0,4,0,14"
+                                   Text="Games Pulse found on this PC. Added games get the general low-delay checklist and the delay check, under their own name."/>
+                        <TextBox x:Name="PickerSearch" Style="{StaticResource SearchBox}" Tag="Search your games" TextChanged="PickerSearch_Changed" Margin="0,0,0,10"/>
+                    </StackPanel>
+                    <Grid Grid.Row="1">
+                        <StackPanel x:Name="PickerLoading" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,8">
+                            <ui:Spinner Width="18" Height="18" Brush="{StaticResource AccentGradient}"/>
+                            <TextBlock Text="Looking for games…" Margin="10,0,0,0" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock x:Name="PickerEmpty" Style="{StaticResource Body}" Visibility="Collapsed" Margin="0,8"
+                                   Text="No other Steam or Epic games found. Use Browse to pick the game's .exe yourself."/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="PickerList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="Row" CornerRadius="10" Padding="10,8" Margin="0,0,0,4" Background="Transparent" Cursor="Hand"
+                                                MouseLeftButtonUp="PickerRow_Click">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <Grid Width="34" Height="34" Margin="0,0,12,0">
+                                                    <Border CornerRadius="8" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"/>
+                                                    <Image Source="{Binding Icon}" Width="28" Height="28" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                </Grid>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Where}" FontSize="11.5" Foreground="{StaticResource TextFaintBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="Add" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                    <Grid Grid.Row="2" Margin="0,16,0,0">
+                        <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Click="PickerBrowse_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8E5;" Style="{StaticResource IconText}" FontSize="13"/>
+                                <TextBlock Text="Browse for a game's .exe" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Content="Cancel" Click="PickerClose_Click"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

@@ -19,6 +19,13 @@ public record KnownGame(
     string Color2 = "#1A1D26",
     string Note = "")
 {
+    /// <summary>A game the user added themselves (Pulse has no game-specific notes for it).</summary>
+    public bool IsCustom => Id.StartsWith("custom:");
+    /// <summary>Uses the general checklist: "Any other game" and games the user added.</summary>
+    public bool IsGeneric => Id == "other" || IsCustom;
+    /// <summary>The "Add a game" tile.</summary>
+    public bool IsAddTile => Id == "add";
+
     /// <summary>True when an installed program's name is this game ("Rust" matches "Rust", not "RustDesk").</summary>
     public bool IsNamed(string installedName) =>
         !string.IsNullOrEmpty(installedName) && Matches.Any(m =>
@@ -271,6 +278,24 @@ public static class GameCatalog
             Color1: "#2E7FD8", Color2: "#0B1E3A"),
     };
 
+    /// <summary>The tile that opens the "Add a game" picker.</summary>
+    public static readonly KnownGame AddTile = new("add", "Add a game", "+", Array.Empty<string>(), Array.Empty<string>(),
+        Reflex: false, AntiLag2: false, LatencySetting: "", FullscreenSetting: "", FpsSettings: Array.Empty<string>(), Genres: Array.Empty<string>());
+
+    /// <summary>A game the user added: the general checklist, under the game's own name.</summary>
+    public static KnownGame Custom(CustomGame c)
+    {
+        var initials = string.Concat(c.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetterOrDigit(w[0])).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+        return Generic with
+        {
+            Id = "custom:" + new string(c.Name.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray()),
+            Name = c.Name,
+            Short = initials.Length > 0 ? initials : "?",
+            Exes = string.IsNullOrEmpty(c.Exe) ? Array.Empty<string>() : new[] { Path.GetFileName(c.Exe) },
+            Matches = new[] { c.Name },
+        };
+    }
+
     /// <summary>The plan used for any game Pulse doesn't have notes for.</summary>
     public static readonly KnownGame Generic = new("other", "Any other game", "+", Array.Empty<string>(), Array.Empty<string>(),
         Reflex: false, AntiLag2: false, LatencySetting: "", FullscreenSetting: "",
@@ -282,4 +307,11 @@ public static class GameCatalog
         },
         Genres: Array.Empty<string>(),
         Note: "Look in the game's Video or Graphics settings for \"NVIDIA Reflex\", \"AMD Anti-Lag 2\" or \"Low latency\". If it has one, turn it on.");
+}
+
+/// <summary>A game the user added from the "Add a game" picker.</summary>
+public class CustomGame
+{
+    public string Name { get; set; }
+    public string Exe { get; set; }
 }

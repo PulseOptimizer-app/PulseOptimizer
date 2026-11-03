@@ -742,7 +742,7 @@
                             <Setter TargetName="Glow" Property="Opacity" Value="0.35"/>
                             <Setter TargetName="StatusDot" Property="Fill" Value="{StaticResource TextFaintBrush}"/>
                         </DataTrigger>
-                        <DataTrigger Binding="{Binding Game.Id}" Value="other">
+                        <DataTrigger Binding="{Binding Game.IsAddTile}" Value="True">
                             <Setter TargetName="StatusDot" Property="Fill" Value="{StaticResource AccentBrush}"/>
                         </DataTrigger>
                     </ControlTemplate.Triggers>

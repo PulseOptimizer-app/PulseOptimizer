@@ -39,7 +39,7 @@ public static class GameArt
     /// </summary>
     public static (ImageSource icon, ImageSource cover) Find(KnownGame g, bool installed)
     {
-        if (g.Id == "other") return (null, null);
+        if (g.IsGeneric || g.IsAddTile) return (null, null);
         ImageSource cover = null, icon = null;
         if (installed)
         {

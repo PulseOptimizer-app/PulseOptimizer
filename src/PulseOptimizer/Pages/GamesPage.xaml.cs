@@ -59,7 +59,111 @@ public partial class GamesPage : UserControl, IPage
 
     void Tile_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is GameItem g) Open(g);
+        if ((sender as FrameworkElement)?.DataContext is not GameItem g) return;
+        if (g.Game.IsAddTile) OpenPicker();
+        else Open(g);
+    }
+
+    // ───────── Add a game ─────────
+
+    public record Candidate(string Name, string Exe, string Where, System.Windows.Media.ImageSource Icon);
+    List<Candidate> _candidates = new();
+
+    static readonly System.Text.RegularExpressions.Regex NotTheGame = new(
+        @"unins|setup|install|redist|vc_?redist|dxsetup|crash|report|helper|update|patch|prereq|easyanticheat|eac_|battleye|be_service|cef|webhelper|launcher|bootstrap|dotnet|directx|ue4prereq|uploader|benchmark|server",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    /// <summary>The game's main .exe in its folder: the biggest one that isn't an installer, launcher or crash reporter.</summary>
+    static string MainExe(string folder)
+    {
+        try
+        {
+            var opts = new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 4, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint };
+            return Directory.EnumerateFiles(folder, "*.exe", opts)
+                .Where(f => !NotTheGame.IsMatch(Path.GetFileNameWithoutExtension(f)))
+                .OrderByDescending(f => new FileInfo(f).Length).FirstOrDefault();
+        }
+        catch { return null; }
+    }
+
+    async void OpenPicker()
+    {
+        Picker.Visibility = Visibility.Visible;
+        Anim.Play((FrameworkElement)Picker.Children[0]);
+        PickerSearch.Text = "";
+        PickerList.ItemsSource = null;
+        PickerEmpty.Visibility = Visibility.Collapsed;
+        PickerLoading.Visibility = Visibility.Visible;
+        var have = _games.Where(g => g.Installed).Select(g => g.Game).ToList();
+        _candidates = await Task.Run(() => PcDiagnostics.LauncherGames()
+            .Where(lg => !have.Any(k => k.IsNamed(lg.Name) || k.Name.Equals(lg.Name, StringComparison.OrdinalIgnoreCase)))
+            .Where(lg => !lg.Name.Contains("Redistributable", StringComparison.OrdinalIgnoreCase) && !lg.Name.Contains("Steamworks", StringComparison.OrdinalIgnoreCase))
+            .Select(lg => (lg, exe: MainExe(lg.Path)))
+            .Where(x => x.exe != null)
+            .Select(x => new Candidate(x.lg.Name, x.exe, (x.lg.Path.Contains("steamapps", StringComparison.OrdinalIgnoreCase) ? "Steam · " : "Epic Games · ") + x.lg.Path, Native.LargeIcon(x.exe, 64)))
+            .OrderBy(c => c.Name).ToList());
+        PickerLoading.Visibility = Visibility.Collapsed;
+        ShowCandidates();
+    }
+
+    void ShowCandidates()
+    {
+        var q = PickerSearch.Text.Trim();
+        var list = q.Length == 0 ? _candidates : _candidates.Where(c => c.Name.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+        PickerList.ItemsSource = list;
+        PickerEmpty.Visibility = list.Count == 0 && PickerLoading.Visibility != Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    void PickerSearch_Changed(object sender, TextChangedEventArgs e) => ShowCandidates();
+    void PickerClose_Click(object sender, RoutedEventArgs e) => Picker.Visibility = Visibility.Collapsed;
+
+    void PickerRow_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is Candidate c) AddGame(c.Name, c.Exe);
+    }
+
+    void PickerBrowse_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Pick the game's .exe", Filter = "Games (*.exe)|*.exe", CheckFileExists = true };
+        if (dlg.ShowDialog() != true) return;
+        var info = System.Diagnostics.FileVersionInfo.GetVersionInfo(dlg.FileName);
+        var name = !string.IsNullOrWhiteSpace(info.ProductName) ? info.ProductName.Trim() : Path.GetFileNameWithoutExtension(dlg.FileName);
+        AddGame(name, dlg.FileName);
+    }
+
+    async void AddGame(string name, string exe)
+    {
+        var st = TweakEngine.State;
+        if (st.CustomGames.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || string.Equals(c.Exe, exe, StringComparison.OrdinalIgnoreCase)))
+        {
+            MainWindow.Instance.Toast($"{name} is already in your games.", ToastKind.Info);
+            return;
+        }
+        st.CustomGames.Add(new CustomGame { Name = name, Exe = exe });
+        TweakEngine.AddLog("games", $"Added {name} to your games");
+        Picker.Visibility = Visibility.Collapsed;
+        await ReloadGames();
+        MainWindow.Instance.Toast($"Added {name}.");
+        if (_games.FirstOrDefault(g => g.Game.IsCustom && g.Name == name) is GameItem added) Open(added);
+    }
+
+    async void RemoveGame_Click(object sender, RoutedEventArgs e)
+    {
+        var g = _current;
+        if (g?.Custom == null) return;
+        if (!await MainWindow.Instance.Confirm($"Remove {g.Name} from your games?", "Only Pulse's list changes. The game itself stays installed.", "Remove")) return;
+        TweakEngine.State.CustomGames.RemoveAll(c => c.Name == g.Custom.Name && c.Exe == g.Custom.Exe);
+        TweakEngine.State.GameChecklist.Remove(g.Game.Id);
+        TweakEngine.Save();
+        await ReloadGames();
+        Back_Click(null, null);
+    }
+
+    async Task ReloadGames()
+    {
+        _games = await LatencyPlan.GamesAsync(refresh: true);
+        foreach (var g in _games) UpdateProgress(g);
+        GameGrid.ItemsSource = _games;
     }
 
     void Back_Click(object sender, RoutedEventArgs e)
@@ -119,7 +223,8 @@ public partial class GamesPage : UserControl, IPage
         _steps = LatencyPlan.Build(g.Game, _hw, _monitor);
         StepList.ItemsSource = _steps;
         GameTitle.Text = g.Name;
-        GameStatus.Text = g.Game.Id == "other" ? "General steps that work in most games" : g.StatusText + (g.HasReflex ? " · NVIDIA Reflex" : "") + (g.HasAntiLag2 ? " · AMD Anti-Lag 2" : "");
+        RemoveGameBtn.Visibility = g.Custom != null ? Visibility.Visible : Visibility.Collapsed;
+        GameStatus.Text = g.Game.Id == "other" ? "General steps that work in most games" : g.Game.IsCustom ? "Added by you · general low-delay checklist" : g.StatusText + (g.HasReflex ? " · NVIDIA Reflex" : "") + (g.HasAntiLag2 ? " · AMD Anti-Lag 2" : "");
         Banner.Background = g.Tint;
         BannerIconBox.Background = g.Tint;
         var art = g.CoverImage ?? g.Icon;
@@ -131,8 +236,8 @@ public partial class GamesPage : UserControl, IPage
 
         var gpu = _hw.Gpu switch { GpuVendor.Nvidia => "NVIDIA graphics card", GpuVendor.Amd => "AMD graphics card", GpuVendor.Intel => "Intel graphics", _ => "graphics" };
         var mon = _monitor != null ? $" and {_monitor.Current.Hz} Hz monitor" : "";
-        PlanIntro.Text = g.Game.Id == "other"
-            ? $"General steps for any game, for your {gpu}{mon}. {g.Game.Note}"
+        PlanIntro.Text = g.Game.IsGeneric
+            ? $"General steps for {(g.Game.IsCustom ? g.Name : "any game")}, for your {gpu}{mon}. {g.Game.Note}"
             : $"For your {gpu}{mon}. Tick each step as you do it; Pulse remembers your progress.";
         CheckIntro.Text = g.Game.Id == "other"
             ? "Start the game, press Check delay, and play for 30 seconds. Pulse finds the running game itself."

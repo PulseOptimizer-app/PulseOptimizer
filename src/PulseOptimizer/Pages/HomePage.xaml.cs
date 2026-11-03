@@ -48,7 +48,7 @@ public partial class HomePage : UserControl, IPage
 
         var games = await LatencyPlan.GamesAsync();
         GamesLoading.Visibility = Visibility.Collapsed;
-        var real = games.Where(g => g.Game.Id != "other").ToList();
+        var real = games.Where(g => !g.Game.IsAddTile && g.Game.Id != "other").ToList();
         GameStrip.ItemsSource = real;
         int installed = real.Count(g => g.Installed);
         GameStat.Text = installed == 0 ? "None of these found yet" : $"{installed} of {real.Count} installed";
