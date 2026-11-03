@@ -10,6 +10,15 @@ public partial class App : Application
         DispatcherUnhandledException += OnUiError;
         TaskScheduler.UnobservedTaskException += (_, args) => args.SetObserved();
         base.OnStartup(e);
+
+        // The weekly scheduled run: no window, just the safe clean-up and a drift check.
+        if (e.Args.Contains("--tune-up", StringComparer.OrdinalIgnoreCase))
+        {
+            try { Core.Fresh.Freshness.RunScheduled(); } catch { }
+            Shutdown();
+            return;
+        }
+        new Pulse.MainWindow().Show();
     }
 
     void OnUiError(object sender, DispatcherUnhandledExceptionEventArgs e)

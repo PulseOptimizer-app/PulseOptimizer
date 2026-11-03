@@ -38,6 +38,12 @@ public class AppState
     public Dictionary<string, List<string>> GameChecklist { get; set; } = new();
     /// <summary>Game id → latency checks, newest first.</summary>
     public Dictionary<string, List<LatencyCheck>> GameLatency { get; set; } = new();
+    /// <summary>Keep it fresh: the "good as new" snapshot and the latest checks.</summary>
+    public Pulse.Core.Fresh.Snapshot Baseline { get; set; }
+    public List<Pulse.Core.Fresh.Snapshot> FreshHistory { get; set; } = new();
+    public bool WeeklyTuneUp { get; set; }
+    /// <summary>Set by the weekly background run; shown once on the next launch.</summary>
+    public string PendingReport { get; set; }
 }
 
 /// <summary>Applies and undoes tweaks, keeping a backup of every value it changes on disk.</summary>

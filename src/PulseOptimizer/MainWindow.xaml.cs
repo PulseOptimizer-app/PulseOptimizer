@@ -60,6 +60,16 @@ public partial class MainWindow : Window
         UpdateSidebar();
         ShowPage("home");
 
+        // Report from the weekly tune-up that ran while Pulse was closed.
+        if (!string.IsNullOrEmpty(TweakEngine.State.PendingReport))
+        {
+            var report = TweakEngine.State.PendingReport;
+            TweakEngine.State.PendingReport = null;
+            TweakEngine.Save();
+            Dispatcher.InvokeAsync(() => Toast(report, ToastKind.Info));
+        }
+        _ = Task.Run(Pulse.Core.Fresh.Freshness.RefreshTaskPath);
+
         // Resume a measurement interrupted by a restart.
         var pending = AbTest.LoadPending();
         if (pending != null) Dispatcher.InvokeAsync(() => Navigate("measure", pending));
@@ -113,6 +123,7 @@ public partial class MainWindow : Window
             {
                 "home" => new HomePage(),
                 "diagnose" => new DiagnosePage(),
+                "fresh" => new FreshPage(),
                 "tweaks" => new TweaksPage(),
                 "measure" => new MeasurePage(),
                 "games" => new GamesPage(),

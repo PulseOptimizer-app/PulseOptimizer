@@ -56,6 +56,7 @@
                         <RadioButton Style="{StaticResource NavButton}" Tag="diagnose" ui:Icon.Glyph="&#xE9D9;" Content="Diagnose" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="tweaks" ui:Icon.Glyph="&#xE945;" Content="Tweaks" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="cleanup" ui:Icon.Glyph="&#xE74D;" Content="Declutter" Checked="Nav_Checked"/>
+                        <RadioButton Style="{StaticResource NavButton}" Tag="fresh" ui:Icon.Glyph="&#xE895;" Content="Keep it fresh" Checked="Nav_Checked"/>
                         <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,10,10,10"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="measure" ui:Icon.Glyph="&#xE9D2;" Content="Measure" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="startup" ui:Icon.Glyph="&#xE7E8;" Content="Startup apps" Checked="Nav_Checked"/>
