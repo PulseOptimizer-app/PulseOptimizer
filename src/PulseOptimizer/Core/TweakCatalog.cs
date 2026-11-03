@@ -32,6 +32,7 @@ public static class TweakCatalog
     const string SrcSpi = "https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow";
     const string SrcDvr = "https://www.stigviewer.com/stigs/microsoft_windows_11_v2r8/2026-05-19/finding/V-253399";
     const string SrcHags = "https://devblogs.microsoft.com/directx/wp-json/wp/v2/posts/3049";
+    const string SrcWidgets = "https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-newsandinterests";
     const string SrcTcpAck = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/networking/registry-entry-control-tcp-acknowledgment-behavior";
 
     static GateResult Yes(string why = "") => new(true, why);
@@ -135,6 +136,37 @@ public static class TweakCatalog
             Gain = "No accidental alt-tabs mid-match. Applies instantly.",
             Tradeoff = "None, unless you rely on the shortcut for accessibility.",
             Actions = { new StickyKeysHotkeyAction() }
+        },
+
+        new Tweak
+        {
+            Id = "do-bandwidth", Category = TweakCategory.Network, Risk = Risk.Safe,
+            Evidence = Evidence.Documented, Proof = ProofMetric.None, Recommended = true,
+            SourceName = "Microsoft Learn: Delivery Optimization reference", SourceUrl = SrcDo,
+            Title = "Stop update downloads from hogging your connection",
+            Summary = "Background Windows and Store update downloads use at most 30% of your bandwidth, leaving the rest for games and calls.",
+            Explain = "By default Windows adjusts background update downloads on its own, which can still spike while you play. This sets Microsoft's documented policy for the maximum share of bandwidth background downloads may use. Updates you start yourself aren't limited.",
+            Changes = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization → DOPercentageMaxBackgroundBandwidth = 30 (Windows default: 0, automatic)",
+            Gain = "Fewer lag spikes on slower connections while updates download in the background. No change on fast connections.",
+            Tradeoff = "Large background updates take longer to finish.",
+            Actions = { LM(@"SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization", "DOPercentageMaxBackgroundBandwidth", 30) }
+        },
+        new Tweak
+        {
+            Id = "widgets", Category = TweakCategory.Privacy, Risk = Risk.Safe,
+            Evidence = Evidence.Documented, Proof = ProofMetric.None,
+            SourceName = "Microsoft Learn: Policy CSP – NewsAndInterests", SourceUrl = SrcWidgets,
+            Title = "Turn off Widgets",
+            Summary = "Removes the Widgets board (news, weather, stocks) and its taskbar button in Windows 11.",
+            Explain = "Uses Microsoft's \"Allow widgets\" policy. The Widgets board loads news feeds in the background; with this off, it doesn't run at all.",
+            Changes = @"HKLM\SOFTWARE\Policies\Microsoft\Dsh → AllowNewsAndInterests = 0 (Windows default: allowed)",
+            Gain = "A cleaner taskbar and no news feed running in the background. No speed claim.",
+            Tradeoff = "No Widgets board. Weather on the taskbar goes away too.",
+            RestartNote = "Sign out needed",
+            Gate = () => !SystemInfo.IsWindows11 ? No("Widgets are a Windows 11 feature.")
+                : SystemInfo.OsName.Contains("Home", StringComparison.OrdinalIgnoreCase) ? No("Microsoft documents this policy for Pro, Enterprise and Education. Windows Home may ignore it; turn Widgets off from Settings → Personalization → Taskbar instead.")
+                : Yes(),
+            Actions = { LM(@"SOFTWARE\Policies\Microsoft\Dsh", "AllowNewsAndInterests", 0) }
         },
 
         // ═════════════ KEEP WITH CONDITIONS: gated, must be measured ═════════════

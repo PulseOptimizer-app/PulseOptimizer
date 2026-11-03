@@ -164,6 +164,8 @@ public class HasValueToVisibility : IValueConverter
 /// <summary>Dims an element to 50% when the bound bool is false.</summary>
 public class BoolToOpacity : IValueConverter
 {
-    public object Convert(object value, Type t, object p, CultureInfo c) => value is true ? 1.0 : 0.55;
+    /// <summary>ConverterParameter="invert" dims when true instead (used for finished checklist steps).</summary>
+    public object Convert(object value, Type t, object p, CultureInfo c) =>
+        (value is true) ^ (p as string == "invert") ? 1.0 : 0.55;
     public object ConvertBack(object value, Type t, object p, CultureInfo c) => throw new NotSupportedException();
 }

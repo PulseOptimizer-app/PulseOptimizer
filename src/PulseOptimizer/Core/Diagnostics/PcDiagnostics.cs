@@ -7,6 +7,8 @@ namespace Pulse.Core;
 
 public enum Severity { Ok, Check, Problem, Unknown }
 
+public record StepLine(int Number, string Text);
+
 public class Finding : Observable
 {
     public string Id { get; init; }
@@ -22,7 +24,17 @@ public class Finding : Observable
     /// <summary>Lower runs first in the list (rough expected impact).</summary>
     public int Rank { get; init; }
 
+    /// <summary>Numbered, PC-specific steps to fix it (filled in by FixGuides).</summary>
+    public List<string> Steps { get; set; } = new();
+    /// <summary>How to check the fix worked.</summary>
+    public string Confirm { get; set; } = "";
+    /// <summary>Values the fix guide needs (device name, refresh rate...).</summary>
+    public Dictionary<string, string> Facts { get; } = new();
+
     public bool HasAction => !string.IsNullOrEmpty(ActionKey);
+    public bool HasSteps => Steps.Count > 0;
+    public bool HasConfirm => !string.IsNullOrEmpty(Confirm);
+    public List<StepLine> NumberedSteps => Steps.Select((s, i) => new StepLine(i + 1, s)).ToList();
     public string SeverityText => Severity switch
     {
         Severity.Ok => "Looks good",
@@ -55,7 +67,7 @@ public static partial class PcDiagnostics
     {
         var checks = new (string label, Func<IEnumerable<Finding>> run)[]
         {
-            ("Checking monitor refresh rates", RefreshRates),
+            ("Checking your monitors", Monitors),
             ("Checking memory speed", MemorySpeed),
             ("Checking for CPU throttling (20-second load test)", Throttling),
             ("Checking driver interrupt load", DpcLoad),
@@ -83,6 +95,11 @@ public static partial class PcDiagnostics
             {
                 all.Add(new Finding { Id = label, Title = label.Replace("Checking ", ""), Severity = Severity.Unknown, Detail = ex.Message, Rank = 99 });
             }
+        }
+        var facts = HardwareFacts.Get();
+        foreach (var f in all)
+        {
+            try { FixGuides.Attach(f, facts); } catch { /* a guide must never break the checkup */ }
         }
         return all.OrderBy(f => f.Severity switch { Severity.Problem => 0, Severity.Check => 1, Severity.Unknown => 2, _ => 3 })
                   .ThenBy(f => f.Rank).ToList();

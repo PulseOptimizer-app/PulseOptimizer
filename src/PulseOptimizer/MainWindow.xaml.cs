@@ -102,6 +102,7 @@ public partial class MainWindow : Window
                 "home" => new HomePage(),
                 "tweaks" => new TweaksPage(),
                 "measure" => new MeasurePage(),
+                "games" => new GamesPage(),
                 "cleanup" => new CleanupPage(),
                 "startup" => new StartupPage(),
                 "security" => new SecurityPage(),
@@ -154,6 +155,12 @@ public partial class MainWindow : Window
 
     public void SetBusyStatus(string status) => DialogBusyText.Text = status;
 
+    public void SetDialogText(string text)
+    {
+        DialogText.Text = text;
+        DialogText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     void ShowOverlay()
     {
         if (Overlay.Visibility == Visibility.Visible) return;
@@ -205,6 +212,7 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(key)) return;
         if (key.StartsWith("page:")) { Navigate(key[5..]); return; }
+        if (key.StartsWith("refresh:")) { _ = DisplayFixer.Apply(key[8..]); return; }
         var target = key.StartsWith("settings:") ? key[9..] : key.StartsWith("url:") ? key[4..] : key;
         try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
         catch (Exception ex) { _ = Alert("Couldn't open that", ex.Message); }

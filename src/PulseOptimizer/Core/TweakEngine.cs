@@ -10,6 +10,15 @@ public class LogEntry
     public string TimeText => Time.ToString("MMM d, h:mm tt");
 }
 
+public class LatencyCheck
+{
+    public DateTime Date { get; set; }
+    public double AvgFps { get; set; }
+    public double Low1Fps { get; set; }
+    public double? LatencyMs { get; set; }
+    public string LatencyKind { get; set; } = "";
+}
+
 public class AppSettings
 {
     public bool AutoRestorePoint { get; set; } = true;
@@ -25,6 +34,10 @@ public class AppState
     public AppSettings Settings { get; set; } = new();
     /// <summary>Times a USB input device was seen disconnecting (gates the USB suspend tweak).</summary>
     public List<DateTime> UsbDropouts { get; set; } = new();
+    /// <summary>Game id → checklist step ids the user ticked on the Games page.</summary>
+    public Dictionary<string, List<string>> GameChecklist { get; set; } = new();
+    /// <summary>Game id → latency checks, newest first.</summary>
+    public Dictionary<string, List<LatencyCheck>> GameLatency { get; set; } = new();
 }
 
 /// <summary>Applies and undoes tweaks, keeping a backup of every value it changes on disk.</summary>

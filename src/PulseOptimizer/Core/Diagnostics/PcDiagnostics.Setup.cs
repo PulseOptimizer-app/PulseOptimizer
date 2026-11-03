@@ -147,6 +147,13 @@ public static partial class PcDiagnostics
         }
     }
 
+    /// <summary>Name and folder of every Steam and Epic game found.</summary>
+    internal static List<(string Name, string Path)> LauncherGames()
+    {
+        try { return SteamGames().Concat(EpicGames()).Select(g => (g.Name, g.Path)).ToList(); }
+        catch { return new(); }
+    }
+
     /// <summary>Install folders of every Steam and Epic game found (used to recognize a running game).</summary>
     internal static List<string> GameInstallFolders()
     {
