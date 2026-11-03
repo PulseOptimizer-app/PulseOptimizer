@@ -67,7 +67,6 @@ public static class Suggestions
         new("League of Legends", "The most-played MOBA: five-versus-five lane battles.", new[] { "strategy", "competitive" }, true, "https://www.leagueoflegends.com"),
         new("Dota 2", "Deep, demanding MOBA; supports AMD Anti-Lag 2 and NVIDIA Reflex.", new[] { "strategy", "competitive" }, true),
         new("Age of Empires II: Definitive Edition", "Classic real-time strategy, still thriving online.", new[] { "strategy" }, false),
-        new("Teamfight Tactics", "Auto-battler strategy in the League of Legends world.", new[] { "strategy", "casual" }, true, "https://teamfighttactics.leagueoflegends.com"),
 
         // Racing, sports, fighting
         new("Forza Horizon 5", "Open-world racing across Mexico; great with a controller.", new[] { "racing" }, false),
