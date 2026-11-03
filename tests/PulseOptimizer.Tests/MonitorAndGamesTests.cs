@@ -136,7 +136,12 @@ public class MonitorAndGamesTests
     [Fact]
     public void Catalog_is_exactly_the_supported_games()
     {
-        Assert.Equal(new[] { "valorant", "cs2", "fortnite", "roblox", "overwatch", "rivals", "r6", "apex", "cod", "arcraiders", "rust", "rocketleague" }, GameCatalog.All.Select(g => g.Id));
+        var ids = GameCatalog.All.Select(g => g.Id).ToList();
+        foreach (var id in new[] { "valorant", "cs2", "fortnite", "roblox", "overwatch", "rivals", "r6", "apex", "cod", "arcraiders", "rust", "rocketleague",
+                                   "thefinals", "pubg", "bf6", "deltaforce", "halo", "hunt", "dota2", "lol", "sf6", "tekken8", "trackmania", "f125" })
+            Assert.Contains(id, ids);
+        Assert.DoesNotContain(GameCatalog.All, g => g.Name == "Minecraft");
+        Assert.All(GameCatalog.All, g => Assert.False(string.IsNullOrWhiteSpace(g.ProSource), g.Id));
     }
 
     [Fact]

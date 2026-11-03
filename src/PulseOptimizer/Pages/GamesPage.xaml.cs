@@ -32,7 +32,7 @@ public partial class GamesPage : UserControl, IPage
             });
             _games = await gamesTask;
             foreach (var g in _games) UpdateProgress(g);
-            GameGrid.ItemsSource = _games;
+            ShowGrids();
             LoadingPanel.Visibility = Visibility.Collapsed;
             BuildChips();
             _loaded = true;
@@ -163,7 +163,24 @@ public partial class GamesPage : UserControl, IPage
     {
         _games = await LatencyPlan.GamesAsync(refresh: true);
         foreach (var g in _games) UpdateProgress(g);
-        GameGrid.ItemsSource = _games;
+        ShowGrids();
+    }
+
+    /// <summary>Your games (installed, added, running) first; the rest of the supported games below, folded away.</summary>
+    void ShowGrids()
+    {
+        GameGrid.ItemsSource = _games.Where(g => g.Installed || g.Running || g.Game.IsAddTile || g.Game.IsCustom).ToList();
+        var rest = _games.Where(g => !(g.Installed || g.Running || g.Game.IsAddTile || g.Game.IsCustom)).OrderBy(g => g.Name).ToList();
+        OtherGrid.ItemsSource = rest;
+        OtherCount.Text = $"{rest.Count} supported games that aren't on this PC. Each has a checklist and the settings pros use.";
+        OtherHeader.Visibility = rest.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    void OtherToggle_Click(object sender, RoutedEventArgs e)
+    {
+        bool show = OtherToggle.IsChecked == true;
+        OtherGrid.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        OtherToggle.Content = show ? "Hide" : "Show";
     }
 
     void Back_Click(object sender, RoutedEventArgs e)

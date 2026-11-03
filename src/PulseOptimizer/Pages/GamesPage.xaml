@@ -13,7 +13,31 @@
                     <ui:Spinner Width="20" Height="20" Brush="{StaticResource AccentGradient}"/>
                     <TextBlock Text="Finding your games…" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource TextDimBrush}"/>
                 </StackPanel>
-                <ItemsControl x:Name="GameGrid" Margin="0,22,0,0">
+                <TextBlock Style="{StaticResource H2}" Text="Your games" Margin="0,22,0,0"/>
+                <ItemsControl x:Name="GameGrid" Margin="0,12,0,0">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Button Style="{StaticResource GameTile}" Click="Tile_Click" ui:Anim.Reveal="True"/>
+                                <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,24,0" CornerRadius="6" Padding="6,2,6,3" Background="#CC0B0C10"
+                                        Visibility="{Binding ProgressText, Converter={StaticResource HasValueToVis}}" IsHitTestVisible="False">
+                                    <TextBlock Text="{Binding ProgressText}" Foreground="White" FontSize="10.5"/>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Supported games that aren't on this PC -->
+                <Grid x:Name="OtherHeader" Margin="0,18,0,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="More games Pulse has checklists for"/>
+                        <TextBlock x:Name="OtherCount" Style="{StaticResource Body}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <ToggleButton x:Name="OtherToggle" Style="{StaticResource LinkToggle}" Content="Show" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OtherToggle_Click"/>
+                </Grid>
+                                <ItemsControl x:Name="OtherGrid" Visibility="Collapsed" Margin="0,12,0,0">
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
