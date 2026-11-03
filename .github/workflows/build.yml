@@ -28,6 +28,12 @@ jobs:
       - name: Run tests (measurement maths, exact undo, tweak list, safety checks)
         run: dotnet test tests/PulseOptimizer.Tests/PulseOptimizer.Tests.csproj -c Release --logger "console;verbosity=normal"
 
+      - name: Get PresentMon (Intel, MIT license) to carry inside the exe
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/get-presentmon.ps1 -Out src/PulseOptimizer/tools/PresentMon.exe
+
       - name: Build single-file exe
         shell: pwsh
         run: |
@@ -37,40 +43,29 @@ jobs:
 
       # Code signing (optional, recommended): see "Signing" in README.md.
 
-      - name: Bundle PresentMon (Intel, MIT license)
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: ./tools/get-presentmon.ps1 -Out pkg/tools/PresentMon.exe
-
-      - name: Package
+      - name: Hashes
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item out/PulseOptimizer.exe pkg/PulseOptimizer.exe
-          Copy-Item README.md pkg/README.md
-          Copy-Item LICENSE pkg/LICENSE.txt
-          Compress-Archive -Path pkg/* -DestinationPath dist/PulseOptimizer.zip
-          $exe = (Get-FileHash pkg/PulseOptimizer.exe -Algorithm SHA256).Hash.ToLower()
-          $zip = (Get-FileHash dist/PulseOptimizer.zip -Algorithm SHA256).Hash.ToLower()
-          "$exe  PulseOptimizer.exe`n$zip  PulseOptimizer.zip" | Out-File dist/SHA256SUMS.txt -Encoding ascii
+          Copy-Item out/PulseOptimizer.exe dist/PulseOptimizer.exe
+          $exe = (Get-FileHash dist/PulseOptimizer.exe -Algorithm SHA256).Hash.ToLower()
+          "$exe  PulseOptimizer.exe" | Out-File dist/SHA256SUMS.txt -Encoding ascii
           Get-Content dist/SHA256SUMS.txt
           "### SHA-256`n``````n$(Get-Content dist/SHA256SUMS.txt -Raw)``````" >> $env:GITHUB_STEP_SUMMARY
 
       # Signed proof that these files were built by this workflow from this repo's public code.
-      # Anyone can check a download with:  gh attestation verify PulseOptimizer.zip --repo OWNER/REPO
+      # Anyone can check a download with:  gh attestation verify PulseOptimizer.exe --repo OWNER/REPO
       - name: Attest build provenance
         if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v1
         with:
-          subject-path: |
-            dist/PulseOptimizer.zip
-            pkg/PulseOptimizer.exe
+          subject-path: dist/PulseOptimizer.exe
 
-      - uses: actions/upload-artifact@v4
+      # Uploaded unzipped, so the Actions page gives a plain PulseOptimizer.exe.
+      - uses: actions/upload-artifact@v7
         with:
-          name: PulseOptimizer
-          path: dist/*
+          path: dist/PulseOptimizer.exe
+          archive: false
 
       - name: Add hashes to release notes
         if: startsWith(github.ref, 'refs/tags/v')
@@ -86,5 +81,5 @@ jobs:
           body_path: .github/RELEASE_TEMPLATE.md
           append_body: true
           files: |
-            dist/PulseOptimizer.zip
+            dist/PulseOptimizer.exe
             dist/SHA256SUMS.txt

@@ -14,15 +14,40 @@ public record CaptureResult(
 }
 
 /// <summary>
-/// Wraps Intel's PresentMon console app (MIT license), bundled at tools\PresentMon.exe by build.bat.
+/// Wraps Intel's PresentMon console app (MIT license). Release builds carry it inside PulseOptimizer.exe and unpack it
+/// to %LocalAppData%\PulseOptimizer\tools the first time it's needed; a tools\PresentMon.exe next to the app also works.
 /// Columns follow PresentMon 2.x's README-ConsoleApplication.md.
 /// </summary>
 public static class PresentMonCapture
 {
-    public static string ExePath =>
-        Path.Combine(AppContext.BaseDirectory, "tools", "PresentMon.exe");
+    static string Beside => Path.Combine(AppContext.BaseDirectory, "tools", "PresentMon.exe");
+    static string Unpacked => Path.Combine(TweakEngine.DataDir, "tools", "PresentMon.exe");
+
+    public static string ExePath => File.Exists(Beside) ? Beside : Unpack() ? Unpacked : Beside;
 
     public static bool Available => File.Exists(ExePath);
+
+    static readonly object UnpackLock = new();
+
+    /// <summary>Writes the embedded PresentMon out once (again only if this Pulse version carries a different one).</summary>
+    static bool Unpack()
+    {
+        lock (UnpackLock)
+        {
+            try
+            {
+                using var res = typeof(PresentMonCapture).Assembly.GetManifestResourceStream("PresentMon.exe");
+                if (res == null) return File.Exists(Unpacked);
+                if (File.Exists(Unpacked) && new FileInfo(Unpacked).Length == res.Length) return true;
+                Directory.CreateDirectory(Path.GetDirectoryName(Unpacked));
+                var tmp = Unpacked + ".new";
+                using (var f = File.Create(tmp)) res.CopyTo(f);
+                File.Move(tmp, Unpacked, overwrite: true);
+                return true;
+            }
+            catch { return File.Exists(Unpacked); }
+        }
+    }
 
     static string CaptureDir => Path.Combine(TweakEngine.DataDir, "captures");
 
@@ -30,7 +55,7 @@ public static class PresentMonCapture
     public static CaptureResult Capture(string processName, int seconds, CancellationToken cancel = default)
     {
         if (!Available)
-            return Fail($"PresentMon wasn't found at {ExePath}. Rebuild with build.bat so it's downloaded.");
+            return Fail($"PresentMon wasn't found at {ExePath}. Download Pulse again from the official release.");
         if (!processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) processName += ".exe";
         if (Process.GetProcessesByName(Path.GetFileNameWithoutExtension(processName)).Length == 0)
             return Fail($"{processName} isn't running. Start the game first.");

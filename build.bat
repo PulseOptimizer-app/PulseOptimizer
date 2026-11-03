@@ -14,18 +14,18 @@ if errorlevel 1 (
   set "DOTNET=%ProgramFiles%\dotnet\dotnet.exe"
 )
 
-rem ---- 2. Build a single self-contained exe ----
+rem ---- 2. Get PresentMon (Intel, MIT license); it is carried inside the exe ----
+if not exist "src\PulseOptimizer\tools\PresentMon.exe" (
+  echo Downloading PresentMon...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "tools\get-presentmon.ps1" -Out "src\PulseOptimizer\tools\PresentMon.exe"
+  if errorlevel 1 echo PresentMon download failed. Frame-time measurement will be unavailable in this build.
+)
+
+rem ---- 3. Build one self-contained exe ----
 echo Building...
 "%DOTNET%" publish src\PulseOptimizer\PulseOptimizer.csproj -c Release -r win-x64 --self-contained true ^
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist
 if errorlevel 1 goto :fail
-
-rem ---- 3. Bundle PresentMon for frame-time measurement ----
-if not exist "dist\tools\PresentMon.exe" (
-  echo Downloading PresentMon ^(Intel, MIT license^)...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "tools\get-presentmon.ps1" -Out "dist\tools\PresentMon.exe"
-  if errorlevel 1 echo PresentMon download failed. Frame-time measurement will be unavailable until it's in dist\tools.
-)
 
 echo.
 echo Done: dist\PulseOptimizer.exe

@@ -1,5 +1,5 @@
 ## Download
-Download **PulseOptimizer.zip** below, unzip it, and run `PulseOptimizer.exe`. Keep the `tools` folder next to it (it holds PresentMon for frame-time measurement).
+Download **PulseOptimizer.exe** below and run it. It's a single file: nothing to unzip or install.
 
 This page is the only official download. If you got Pulse anywhere else, delete it and download it here.
 
@@ -24,9 +24,9 @@ This is an early release: please report anything that looks wrong on the Issues 
 
 **Build proof.** This release was built by GitHub Actions from this repository's public code. To check it yourself, install the [GitHub CLI](https://cli.github.com) and run:
 ```
-gh attestation verify PulseOptimizer.zip --repo {{REPO}}
+gh attestation verify PulseOptimizer.exe --repo {{REPO}}
 ```
 
-**VirusTotal:** (paste the VirusTotal link for PulseOptimizer.zip here)
+**VirusTotal:** (paste the VirusTotal link for PulseOptimizer.exe here)
 
 Pulse is open source and is not affiliated with Microsoft or Intel.

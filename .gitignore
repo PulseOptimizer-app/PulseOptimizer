@@ -6,3 +6,4 @@ dist/
 *.user
 .vs/
 TestResults/
+src/PulseOptimizer/tools/
