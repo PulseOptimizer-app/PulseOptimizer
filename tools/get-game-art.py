@@ -19,6 +19,8 @@ ALIASES = {
     "Rainbow Six Siege": "Tom Clancy's Rainbow Six Siege",
 }
 SKIP = {"Any other game"}
+# Games the store search no longer returns (delisted for new buyers, or a symbol in the name), by Steam app id.
+KNOWN = {"Rocket League": 252950, "Fall Guys": 1097150, "Battlefield 6": 2807960, "F1 25": 3059520, "PEAK": 3527290}
 
 def norm(s): return re.sub(r"[^a-z0-9]", "", s.lower())
 
@@ -66,7 +68,7 @@ def main():
         if name in SKIP: continue
         path = os.path.join(OUT, key_for(name) + ".jpg")
         try:
-            app = find_app(name)
+            app = find_app(name) or KNOWN.get(name)
             data = art(app) if app else None
             if data:
                 open(path, "wb").write(data); found += 1
