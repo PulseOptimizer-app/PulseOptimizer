@@ -78,7 +78,7 @@ public class GameConfigProfile
 public static class GameConfigs
 {
     /// <summary>Words that must never appear in a key Pulse changes: those settings are personal.</summary>
-    public static readonly string[] Forbidden = { "sens", "bind", "key", "crosshair", "fov", "fieldofview", "volume", "audio", "mouse", "invert", "aim", "zoom", "reticle" };
+    public static readonly string[] Forbidden = { "sens", "bind", "key", "crosshair", "fov", "fieldofview", "mastervolume", "musicvolume", "voice", "sound", "audio", "mouse", "invert", "aim", "zoom", "reticle" };
 
     static string Local => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
