@@ -31,6 +31,8 @@
     <Resource Include="Assets\logo-128.png" />
     <!-- Game covers fetched by tools/get-game-art.py at build time (not committed). -->
     <Resource Include="Assets\Games\*.jpg" />
+    <!-- Translations: English text → translated text, one file per language. -->
+    <EmbeddedResource Include="Lang\*.json" LogicalName="Lang.%(Filename).json" />
     <Resource Include="Assets\Games\*.png" />
     <!-- PresentMon (Intel, MIT) is downloaded here by the build and carried inside the exe, so the release is one file. -->
     <EmbeddedResource Include="tools\PresentMon.exe" Condition="Exists('tools\PresentMon.exe')" LogicalName="PresentMon.exe" />

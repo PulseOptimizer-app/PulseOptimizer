@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Instance = this;
+        LangLabel.Text = Ui.Loc.Current == "pt-BR" ? "PT" : Ui.Loc.Current.ToUpperInvariant();
         Loaded += OnLoaded;
         SourceInitialized += (_, _) => Native.StyleWindow(new WindowInteropHelper(this).Handle);
         StateChanged += (_, _) =>
@@ -164,11 +165,11 @@ public partial class MainWindow : Window
     public Task<bool> Confirm(string title, string text, string ok = "Continue", string cancel = "Cancel")
     {
         _dialog?.TrySetResult(false);
-        DialogTitle.Text = title;
-        DialogText.Text = text;
+        DialogTitle.Text = Ui.Loc.T(title);
+        DialogText.Text = Ui.Loc.T(text);
         DialogText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
-        DialogOk.Content = ok;
-        DialogCancel.Content = cancel ?? "";
+        DialogOk.Content = Ui.Loc.T(ok);
+        DialogCancel.Content = Ui.Loc.T(cancel ?? "");
         DialogCancel.Visibility = cancel == null ? Visibility.Collapsed : Visibility.Visible;
         DialogButtons.Visibility = Visibility.Visible;
         DialogBusyRow.Visibility = Visibility.Collapsed;
@@ -181,16 +182,16 @@ public partial class MainWindow : Window
 
     public void ShowBusy(string title, string text, string status = "Working…")
     {
-        DialogTitle.Text = title;
-        DialogText.Text = text;
+        DialogTitle.Text = Ui.Loc.T(title);
+        DialogText.Text = Ui.Loc.T(text);
         DialogText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
-        DialogBusyText.Text = status;
+        DialogBusyText.Text = Ui.Loc.T(status);
         DialogButtons.Visibility = Visibility.Collapsed;
         DialogBusyRow.Visibility = Visibility.Visible;
         ShowOverlay();
     }
 
-    public void SetBusyStatus(string status) => DialogBusyText.Text = status;
+    public void SetBusyStatus(string status) => DialogBusyText.Text = Ui.Loc.T(status);
 
     public void SetDialogText(string text)
     {
@@ -226,7 +227,7 @@ public partial class MainWindow : Window
     public async void Toast(string text, ToastKind kind = ToastKind.Success)
     {
         int v = ++_toastVersion;
-        ToastText.Text = text;
+        ToastText.Text = Ui.Loc.T(text);
         (ToastIcon.Text, ToastIcon.Foreground) = kind switch
         {
             ToastKind.Warning => ("", (Brush)FindResource("WarnBrush")),
@@ -253,6 +254,54 @@ public partial class MainWindow : Window
         var target = key.StartsWith("settings:") ? key[9..] : key.StartsWith("url:") ? key[4..] : key;
         try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
         catch (Exception ex) { _ = Alert("Couldn't open that", ex.Message); }
+    }
+
+    // ───────── Language ─────────
+
+    void Lang_Click(object sender, RoutedEventArgs e)
+    {
+        LangList.Children.Clear();
+        var choice = TweakEngine.State.Settings.Language ?? "auto";
+        var auto = Ui.Loc.Languages.First(l => l.Code == Ui.Loc.FromWindows()).Name;
+        var options = new List<(string Code, string Name)> { ("auto", $"{Ui.Loc.T("Match Windows")} ({auto})") };
+        options.AddRange(Ui.Loc.Languages);
+        foreach (var (code, name) in options)
+        {
+            var b = new Button
+            {
+                Style = (Style)FindResource("GhostButton"),
+                BorderThickness = new Thickness(0),
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(10, 7, 10, 7),
+                Margin = new Thickness(0, 1, 0, 1),
+                Content = (code == choice ? "✓  " : "     ") + name,
+                Tag = code,
+            };
+            b.Click += LangPick_Click;
+            LangList.Children.Add(b);
+        }
+        LangPopup.IsOpen = true;
+    }
+
+    async void LangPick_Click(object sender, RoutedEventArgs e)
+    {
+        LangPopup.IsOpen = false;
+        var code = (string)((FrameworkElement)sender).Tag;
+        if (code == (TweakEngine.State.Settings.Language ?? "auto")) return;
+        TweakEngine.State.Settings.Language = code;
+        TweakEngine.Save();
+        var target = code == "auto" ? Ui.Loc.FromWindows() : code;
+        if (target == Ui.Loc.Current) return;
+        if (await Confirm("Restart Pulse to switch language?", "Pulse shows in this language after a restart.", "Restart now", "Cancel"))
+        {
+            try
+            {
+                var exe = Environment.ProcessPath;
+                if (exe != null) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+            }
+            catch { return; }
+            Application.Current.Shutdown();
+        }
     }
 
     // ───────── Caption ─────────

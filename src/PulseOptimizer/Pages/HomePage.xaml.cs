@@ -32,7 +32,7 @@ public partial class HomePage : UserControl, IPage
     public async void OnShown(object parameter)
     {
         var hour = DateTime.Now.Hour;
-        Greeting.Text = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+        Greeting.Text = Loc.T(hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
         ShowHealth();
         UpdateStats();
 
@@ -43,7 +43,7 @@ public partial class HomePage : UserControl, IPage
             PcLine.Text = $"{os} · {cpu}";
             CpuName.Text = cpu;
             GpuName.Text = gpu;
-            RamName.Text = $"{ram} installed";
+            RamName.Text = Loc.F("{0} installed", ram);
         }
 
         var games = await LatencyPlan.GamesAsync();
@@ -53,15 +53,15 @@ public partial class HomePage : UserControl, IPage
         var mine = real.Where(g => g.Installed || g.Running).ToList();
         GameStrip.ItemsSource = mine.Concat(real.Except(mine)).Take(Math.Max(8, mine.Count)).ToList();
         int installed = real.Count(g => g.Installed);
-        GameStat.Text = installed == 0 ? $"{real.Count} games supported" : $"{installed} installed · {real.Count} supported";
+        GameStat.Text = installed == 0 ? Loc.F("{0} games supported", real.Count) : Loc.F("{0} installed · {1} supported", installed, real.Count);
     }
 
     void UpdateStats()
     {
         var d = SystemInfo.SystemDrive;
-        DeclutterStat.Text = $"{Format.Bytes(d.AvailableFreeSpace)} free on {d.Name.TrimEnd('\\')}";
+        DeclutterStat.Text = Loc.F("{0} free on {1}", Format.Bytes(d.AvailableFreeSpace), d.Name.TrimEnd('\\'));
         int n = TweakEngine.State.Applied.Count;
-        TweakStat.Text = n == 0 ? "None applied yet" : $"{n} applied, all undoable";
+        TweakStat.Text = n == 0 ? Loc.T("None applied yet") : Loc.F("{0} applied, all undoable", n);
     }
 
     void UpdateLive()
@@ -70,7 +70,7 @@ public partial class HomePage : UserControl, IPage
         CpuText.Text = $"{LiveStats.CpuNow * 100:0}%";
         GpuText.Text = LiveStats.GpuNow is double g ? $"{g * 100:0}%" : "n/a";
         RamText.Text = $"{LiveStats.RamNow * 100:0}%";
-        RamName.Text = $"{Format.Bytes(LiveStats.RamUsedBytes)} of {Format.Bytes(LiveStats.RamTotalBytes, 0)} in use";
+        RamName.Text = Loc.F("{0} of {1} in use", Format.Bytes(LiveStats.RamUsedBytes), Format.Bytes(LiveStats.RamTotalBytes, 0));
         CpuSpark.SetValues(LiveStats.Cpu);
         GpuSpark.SetValues(LiveStats.Gpu);
         RamSpark.SetValues(LiveStats.Ram);
@@ -83,13 +83,13 @@ public partial class HomePage : UserControl, IPage
         int ok = f.Count(x => x.Severity == Severity.Ok);
         var issues = f.Where(x => x.Severity is Severity.Problem or Severity.Check).OrderBy(x => x.Severity == Severity.Problem ? 0 : 1).ThenBy(x => x.Rank).ToList();
         HealthBig.Text = $"{ok}/{f.Count}";
-        HealthSmall.Text = "checks pass";
+        HealthSmall.Text = Loc.T("checks pass");
         HealthRing.Value = 0;
         HealthRing.AnimateTo(100.0 * ok / f.Count);
-        HealthTitle.Text = issues.Count == 0 ? "Everything looks good" : $"{issues.Count} thing{(issues.Count == 1 ? "" : "s")} to fix";
-        HealthText.Text = issues.Count == 0 ? "No problems found in the last checkup." : "The biggest ones first:";
+        HealthTitle.Text = issues.Count == 0 ? Loc.T("Everything looks good") : issues.Count == 1 ? Loc.T("1 thing to fix") : Loc.F("{0} things to fix", issues.Count);
+        HealthText.Text = Loc.T(issues.Count == 0 ? "No problems found in the last checkup." : "The biggest ones first:");
         IssueList.ItemsSource = issues.Take(3).ToList();
-        HealthBtnText.Text = issues.Count == 0 ? "Run again" : "Fix these now";
+        HealthBtnText.Text = Loc.T(issues.Count == 0 ? "Run again" : "Fix these now");
     }
 
     void Health_Click(object sender, RoutedEventArgs e) =>

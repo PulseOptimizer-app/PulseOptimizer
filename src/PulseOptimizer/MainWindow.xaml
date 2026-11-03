@@ -90,7 +90,22 @@
         </Border>
 
         <!-- ═════════ Top bar chip ═════════ -->
-        <Border Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,4,156,0" CornerRadius="13" Padding="10,4,12,5"
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,4,156,0">
+        <Grid Margin="0,0,8,0">
+            <Button x:Name="LangBtn" Style="{StaticResource GhostButton}" Padding="10,4,10,5" FontSize="11.5" Click="Lang_Click"
+                    WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Language">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE774;" Style="{StaticResource IconText}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="LangLabel" Margin="6,0,0,0" VerticalAlignment="Center" Text="EN"/>
+                </StackPanel>
+            </Button>
+            <Popup x:Name="LangPopup" PlacementTarget="{Binding ElementName=LangBtn}" Placement="Bottom" VerticalOffset="6" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="6" MinWidth="190">
+                    <StackPanel x:Name="LangList"/>
+                </Border>
+            </Popup>
+        </Grid>
+        <Border CornerRadius="13" Padding="10,4,12,5"
                 Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" ToolTip="{Binding Text, ElementName=SidebarStatus}">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="&#xE73E;" Style="{StaticResource IconText}" FontSize="11" Foreground="{StaticResource GoodBrush}"/>
@@ -98,6 +113,7 @@
                 <TextBlock x:Name="SidebarStatus" Visibility="Collapsed"/>
             </StackPanel>
         </Border>
+        </StackPanel>
 
         <!-- ═════════ Caption buttons ═════════ -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">

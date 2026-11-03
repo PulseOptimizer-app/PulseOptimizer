@@ -136,10 +136,10 @@ public static class Format
     public static string Ago(DateTime t)
     {
         var d = DateTime.Now - t;
-        if (d.TotalMinutes < 1) return "just now";
-        if (d.TotalHours < 1) return $"{(int)d.TotalMinutes} min ago";
-        if (d.TotalDays < 1) return $"{(int)d.TotalHours} h ago";
-        if (d.TotalDays < 2) return "yesterday";
-        return $"{(int)d.TotalDays} days ago";
+        if (d.TotalMinutes < 1) return Pulse.Ui.Loc.T("just now");
+        if (d.TotalHours < 1) return Pulse.Ui.Loc.F("{0} min ago", (int)d.TotalMinutes);
+        if (d.TotalDays < 1) return Pulse.Ui.Loc.F("{0} h ago", (int)d.TotalHours);
+        if (d.TotalDays < 2) return Pulse.Ui.Loc.T("yesterday");
+        return Pulse.Ui.Loc.F("{0} days ago", (int)d.TotalDays);
     }
 }

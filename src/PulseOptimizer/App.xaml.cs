@@ -40,6 +40,7 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        try { Ui.Loc.Init(Core.TweakEngine.State.Settings.Language); } catch { }
         new Pulse.MainWindow().Show();
     }
 

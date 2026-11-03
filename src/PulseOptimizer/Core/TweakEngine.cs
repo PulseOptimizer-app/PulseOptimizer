@@ -22,6 +22,8 @@ public class LatencyCheck
 public class AppSettings
 {
     public bool AutoRestorePoint { get; set; } = true;
+    /// <summary>"auto" follows Windows; otherwise a language code from Loc.Languages.</summary>
+    public string Language { get; set; } = "auto";
 }
 
 public class AppState
