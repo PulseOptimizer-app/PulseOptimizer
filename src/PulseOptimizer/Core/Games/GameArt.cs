@@ -61,8 +61,14 @@ public static class GameArt
             if (BundledCache.TryGetValue(key, out var img)) return img;
             try
             {
-                var uri = new Uri($"pack://application:,,,/Assets/Games/{key}.jpg", UriKind.Absolute);
-                using var stream = Application.GetResourceStream(uri)?.Stream;
+                Stream stream = null;
+                foreach (var ext in new[] { ".jpg", ".png" })
+                {
+                    try { stream = Application.GetResourceStream(new Uri($"pack://application:,,,/Assets/Games/{key}{ext}", UriKind.Absolute))?.Stream; }
+                    catch { stream = null; }
+                    if (stream != null) break;
+                }
+                using var _ = stream;
                 if (stream != null)
                 {
                     var bmp = new BitmapImage();

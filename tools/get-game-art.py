@@ -21,6 +21,8 @@ ALIASES = {
 SKIP = {"Any other game"}
 # Games the store search no longer returns (delisted for new buyers, or a symbol in the name), by Steam app id.
 KNOWN = {"Rocket League": 252950, "Fall Guys": 1097150, "Battlefield 6": 2807960, "F1 25": 3059520, "PEAK": 3527290}
+# Art you add by hand (games not on Steam) lives in assets/game-art/<key>.jpg|png and always wins.
+MANUAL = os.path.join(ROOT, "assets", "game-art")
 
 def norm(s): return re.sub(r"[^a-z0-9]", "", s.lower())
 
@@ -36,14 +38,34 @@ def find_app(name):
     term = ALIASES.get(name, name)
     res = get("https://store.steampowered.com/api/storesearch/?l=english&cc=US&term=" + urllib.parse.quote(term))
     want = norm(term)
-    for item in res.get("items", []):
-        if item.get("type") != "app": continue
+    items = [i for i in res.get("items", []) if i.get("type") == "app"]
+    for item in items:
         got = norm(item.get("name", ""))
         if got == want or got.startswith(want) and len(got) - len(want) <= 3:
+            return item["id"]
+    # Looser second pass: the name appears inside Steam's title (e.g. "Battlefield™ 6", "EA SPORTS F1® 25").
+    for item in items:
+        got = norm(item.get("name", ""))
+        if len(want) >= 4 and want in got and len(got) - len(want) <= 12:
             return item["id"]
     return None
 
 def art(app_id):
+    # Newer games keep their art under a hashed folder; appdetails tells us where.
+    try:
+        info = get(f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=english")
+        data = (info.get(str(app_id)) or {}).get("data") or {}
+        header = data.get("header_image", "")
+        m = re.search(r"/apps/\d+/([0-9a-f]{40})/", header)
+        if m:
+            for name in ("library_600x900_2x.jpg", "library_600x900.jpg"):
+                try:
+                    d = get(f"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{app_id}/{m.group(1)}/{name}", binary=True)
+                    if len(d) > 5000: return d
+                except Exception:
+                    pass
+    except Exception:
+        pass
     for url in (f"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{app_id}/library_600x900.jpg",
                 f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/library_600x900.jpg"):
         try:
@@ -64,9 +86,17 @@ def names():
 def main():
     os.makedirs(OUT, exist_ok=True)
     found = 0
+    import shutil
+    if os.path.isdir(MANUAL):
+        for f in os.listdir(MANUAL):
+            stem, ext = os.path.splitext(f)
+            if ext.lower() in (".jpg", ".jpeg", ".png"):
+                shutil.copy(os.path.join(MANUAL, f), os.path.join(OUT, norm(stem) + ".jpg" if ext.lower() != ".png" else norm(stem) + ".png"))
+                print(f"manual {f}")
     for name in names():
         if name in SKIP: continue
         path = os.path.join(OUT, key_for(name) + ".jpg")
+        if os.path.exists(path) or os.path.exists(path[:-4] + ".png"): continue
         try:
             app = find_app(name) or KNOWN.get(name)
             data = art(app) if app else None
