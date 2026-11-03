@@ -18,6 +18,8 @@ public class RobloxSettings
     /// <summary>The roblox / roblox-player launch commands from before Pulse took them over.</summary>
     public Dictionary<string, string> OriginalHandlers { get; set; } = new();
     public DateTime? LastLaunch { get; set; }
+    /// <summary>NVIDIA driver settings Pulse set for Roblox, with what was there before (for Undo).</summary>
+    public List<NvBackup> NvidiaBackups { get; set; } = new();
 }
 
 /// <summary>One setting on the Roblox page, shown as a row of choices.</summary>

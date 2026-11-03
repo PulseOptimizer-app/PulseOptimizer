@@ -70,6 +70,50 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <!-- NVIDIA profile, Roblox only -->
+            <Border x:Name="NvCard" Style="{StaticResource Card}" Margin="0,16,0,0" Padding="22,18" Visibility="Collapsed">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource H2}" Text="NVIDIA settings for Roblox only"/>
+                                <Border x:Name="NvOnPill" Style="{StaticResource Pill}" Background="{StaticResource GoodSoftBrush}" Margin="10,0,0,0" Visibility="Collapsed">
+                                    <TextBlock Style="{StaticResource PillText}" Text="Applied" Foreground="{StaticResource GoodBrush}"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Body}" Margin="0,4,0,0" MaxWidth="660" HorizontalAlignment="Left"
+                                       Text="Pulse sets these in NVIDIA's own per-game profile for Roblox, the same place as NVIDIA Control Panel → Manage 3D settings → Program Settings. Your other games and global settings don't change."/>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Margin="0,14,0,0">
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Body}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,16,0" Text="Low Latency Mode: On. Roblox has no NVIDIA Reflex, so this is the driver's best option."/>
+                            <CheckBox x:Name="NvLowLatency" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Body}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,16,0" Text="Power management: Prefer maximum performance. Stops the card clocking down mid-game."/>
+                            <CheckBox x:Name="NvMaxPerf" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Body}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,16,0" Text="Vertical sync: Force off. Lowest delay; you may see tearing without G-SYNC."/>
+                            <CheckBox x:Name="NvVsyncOff" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock x:Name="NvCapText" Style="{StaticResource Body}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                            <CheckBox x:Name="NvCap" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="False"/>
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button x:Name="NvUndoBtn" Style="{StaticResource GhostButton}" Content="Undo" Margin="0,0,10,0" Click="NvUndo_Click" Visibility="Collapsed"/>
+                        <Button Style="{StaticResource PrimaryButton}" Content="Apply NVIDIA settings" Click="NvApply_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Fast Flag editor -->
             <Border Style="{StaticResource Card}" Margin="0,16,0,0" Padding="22,18">
                 <StackPanel>

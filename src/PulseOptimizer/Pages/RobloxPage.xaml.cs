@@ -20,8 +20,11 @@ public partial class RobloxPage : UserControl, IPage
 
     RobloxSettings S => RobloxBoost.Settings;
 
-    public void OnShown(object parameter)
+    int _hz;
+
+    public async void OnShown(object parameter)
     {
+        _ = ShowNvidia();
         _loading = true;
         if (S.Choices.Count == 0) S.Choices = new(RobloxBoost.Presets["balanced"]);
         foreach (var o in _options) o.Value = S.Choices.GetValueOrDefault(o.Key, "");
@@ -115,6 +118,62 @@ public partial class RobloxPage : UserControl, IPage
     }
 
     void Cache_Click(object sender, RoutedEventArgs e) => MainWindow.Instance.Navigate("cleanup");
+
+    // ───────── NVIDIA profile (Roblox only) ─────────
+
+    async Task ShowNvidia()
+    {
+        var (ok, hz) = await Task.Run(() =>
+        {
+            int h = 0;
+            try { h = Displays.Enumerate().FirstOrDefault(m => m.IsPrimary)?.Current.Hz ?? 0; } catch { }
+            return (NvidiaProfile.Available, h);
+        });
+        _hz = hz;
+        NvCard.Visibility = ok ? Visibility.Visible : Visibility.Collapsed;
+        NvCapText.Text = hz >= 100
+            ? $"Max Frame Rate: {Math.Min(hz - 3, 237)} FPS (just under your {hz} Hz, keeps G-SYNC/FreeSync in range; leave off if you don't use it)"
+            : "Max Frame Rate (only useful with a 100 Hz+ monitor and G-SYNC)";
+        NvCap.IsEnabled = hz >= 100;
+        bool applied = S.NvidiaBackups.Count > 0;
+        NvOnPill.Visibility = NvUndoBtn.Visibility = applied ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    async void NvApply_Click(object sender, RoutedEventArgs e)
+    {
+        var list = new List<NvSetting>();
+        if (NvLowLatency.IsChecked == true) list.Add(new(NvidiaProfile.PRERENDERLIMIT_ID, "Low Latency Mode", 1, "On"));
+        if (NvMaxPerf.IsChecked == true) list.Add(new(NvidiaProfile.PREFERRED_PSTATE_ID, "Power management mode", 1, "Prefer maximum performance"));
+        if (NvVsyncOff.IsChecked == true) list.Add(new(NvidiaProfile.VSYNCMODE_ID, "Vertical sync", NvidiaProfile.VSYNCMODE_FORCEOFF, "Force off"));
+        if (NvCap.IsChecked == true && _hz >= 100) list.Add(new(NvidiaProfile.FRL_FPS_ID, "Max Frame Rate", (uint)Math.Min(_hz - 3, 237), $"{Math.Min(_hz - 3, 237)} FPS"));
+        if (list.Count == 0) return;
+
+        var lines = string.Join("\n", list.Select(x => $"•  {x.Name}: {x.ValueText}"));
+        if (!await MainWindow.Instance.Confirm("Change NVIDIA settings for Roblox?",
+                lines + "\n\nOnly Roblox's profile changes; your other games and global settings stay as they are. Undo puts the old values back. Takes effect the next time Roblox starts.", "Apply")) return;
+        try
+        {
+            if (S.NvidiaBackups.Count > 0) await Task.Run(() => NvidiaProfile.Undo(S.NvidiaBackups));
+            S.NvidiaBackups = await Task.Run(() => NvidiaProfile.Apply(list));
+            TweakEngine.AddLog("roblox", $"Applied {list.Count} NVIDIA settings to Roblox's profile");
+            MainWindow.Instance.Toast("NVIDIA settings applied to Roblox. Restart Roblox if it's open.");
+        }
+        catch (Exception ex) { await MainWindow.Instance.Alert("NVIDIA settings weren't changed", ex.Message); }
+        await ShowNvidia();
+    }
+
+    async void NvUndo_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await Task.Run(() => NvidiaProfile.Undo(S.NvidiaBackups));
+            S.NvidiaBackups.Clear();
+            TweakEngine.AddLog("undo", "Restored Roblox's NVIDIA settings");
+            MainWindow.Instance.Toast("Roblox's NVIDIA settings are back to how they were.");
+        }
+        catch (Exception ex) { await MainWindow.Instance.Alert("Couldn't restore", ex.Message); }
+        await ShowNvidia();
+    }
 
     // ───────── Fast Flag editor ─────────
 
