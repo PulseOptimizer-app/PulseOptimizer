@@ -92,17 +92,22 @@
         </ScrollViewer>
 
         <!-- ═════════ One game ═════════ -->
-        <ScrollViewer x:Name="DetailView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel x:Name="PlanPanel" Margin="0,0,0,36">
-                <Button x:Name="RemoveGameBtn" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Content="Remove from my games" Click="RemoveGame_Click" Visibility="Collapsed"/>
-                <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Click="Back_Click" Margin="0,-22,0,0">
+        <Grid x:Name="DetailView" Visibility="Collapsed">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <!-- Fixed bar: always visible, however far down you scroll. Esc or the mouse's back button also go back. -->
+            <Grid Margin="0,0,0,10">
+                <Button x:Name="BackBtn" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Click="Back_Click" Padding="14,8" ToolTip="Back to all games (Esc)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE72B;" Style="{StaticResource IconText}" FontSize="12"/>
                         <TextBlock Text="All games" Margin="8,0,0,0"/>
                     </StackPanel>
                 </Button>
+                <Button x:Name="RemoveGameBtn" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Remove from my games" Click="RemoveGame_Click" Visibility="Collapsed"/>
+            </Grid>
+        <ScrollViewer x:Name="DetailScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="PlanPanel" Margin="0,0,0,36">
                 <!-- Banner -->
-                <Border CornerRadius="14" Margin="0,14,0,16" Height="128" ClipToBounds="True" x:Name="Banner">
+                <Border CornerRadius="14" Margin="0,0,0,16" Height="128" ClipToBounds="True" x:Name="Banner">
                     <Grid>
                         <Image x:Name="BannerBlur" Stretch="UniformToFill" Opacity="0.6" Margin="-40">
                             <Image.Effect><BlurEffect Radius="40"/></Image.Effect>
@@ -254,6 +259,7 @@
                     </Border>
             </StackPanel>
         </ScrollViewer>
+        </Grid>
 
         <!-- ═════════ Add a game ═════════ -->
         <Grid x:Name="Picker" Visibility="Collapsed" Background="#B30B0C10" Margin="-36,-6,-36,0">

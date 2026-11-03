@@ -105,8 +105,19 @@ public partial class MainWindow : Window
         else rb.IsChecked = true; // fires Nav_Checked
     }
 
+    bool _justChecked;
+
+    /// <summary>Clicking the page you're already on resets it (e.g. Games goes back to the library from inside a game).</summary>
+    void Nav_Click(object sender, RoutedEventArgs e)
+    {
+        if (_justChecked) { _justChecked = false; return; }
+        if (sender is RadioButton rb) ShowPage((string)rb.Tag);
+    }
+
     void Nav_Checked(object sender, RoutedEventArgs e)
     {
+        _justChecked = true;
+        Dispatcher.BeginInvoke(() => _justChecked = false, System.Windows.Threading.DispatcherPriority.Background);
         if (!IsLoaded || sender is not RadioButton rb) return;
         ShowPage((string)rb.Tag);
     }

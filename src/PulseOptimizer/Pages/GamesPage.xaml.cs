@@ -16,7 +16,26 @@ public partial class GamesPage : UserControl, IPage
     MonitorInfo _monitor;
     bool _loaded, _checking;
 
-    public GamesPage() => InitializeComponent();
+    public GamesPage()
+    {
+        InitializeComponent();
+        // Esc, Backspace or the mouse's back button leave a game.
+        PreviewKeyDown += (_, e) =>
+        {
+            if (DetailView.Visibility == Visibility.Visible && Picker.Visibility != Visibility.Visible
+                && (e.Key == System.Windows.Input.Key.Escape || (e.Key == System.Windows.Input.Key.Back && e.OriginalSource is not TextBox)))
+            { Back_Click(null, null); e.Handled = true; }
+            else if (Picker.Visibility == Visibility.Visible && e.Key == System.Windows.Input.Key.Escape)
+            { Picker.Visibility = Visibility.Collapsed; e.Handled = true; }
+        };
+        PreviewMouseDown += (_, e) =>
+        {
+            if (e.ChangedButton == System.Windows.Input.MouseButton.XButton1 && DetailView.Visibility == Visibility.Visible)
+            { Back_Click(null, null); e.Handled = true; }
+        };
+        Loaded += (_, _) => Focus();
+        Focusable = true;
+    }
 
     public async void OnShown(object parameter)
     {
@@ -38,6 +57,9 @@ public partial class GamesPage : UserControl, IPage
             _loaded = true;
         }
         else RefreshRunning();
+
+        // Opening Games from the sidebar (no game asked for) always shows the library, never a game left open.
+        if (parameter == null && DetailView.Visibility == Visibility.Visible) Back_Click(null, null);
 
         if (parameter is string id && _games.FirstOrDefault(g => g.Game.Id == id) is GameItem pick) Open(pick);
     }
@@ -265,7 +287,7 @@ public partial class GamesPage : UserControl, IPage
         ShowAuto();
         LibraryView.Visibility = Visibility.Collapsed;
         DetailView.Visibility = Visibility.Visible;
-        DetailView.ScrollToTop();
+        DetailScroll.ScrollToTop();
         Anim.Play(PlanPanel);
     }
 
