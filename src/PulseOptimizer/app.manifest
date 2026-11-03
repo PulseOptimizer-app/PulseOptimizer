@@ -5,7 +5,8 @@
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
         <!-- Tweaks write to system settings, so the app asks for admin rights once at launch. -->
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+        <!-- asInvoker so Roblox's Play button can launch through Pulse without a UAC prompt; the main window elevates itself (App.xaml.cs). -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>

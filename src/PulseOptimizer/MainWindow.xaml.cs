@@ -69,6 +69,7 @@ public partial class MainWindow : Window
             Dispatcher.InvokeAsync(() => Toast(report, ToastKind.Info));
         }
         _ = Task.Run(Pulse.Core.Fresh.Freshness.RefreshTaskPath);
+        _ = Task.Run(Pulse.Core.Roblox.RobloxBoost.Maintain);
 
         // Resume a measurement interrupted by a restart.
         var pending = AbTest.LoadPending();
@@ -124,6 +125,7 @@ public partial class MainWindow : Window
                 "home" => new HomePage(),
                 "diagnose" => new DiagnosePage(),
                 "fresh" => new FreshPage(),
+                "roblox" => new RobloxPage(),
                 "tweaks" => new TweaksPage(),
                 "measure" => new MeasurePage(),
                 "games" => new GamesPage(),

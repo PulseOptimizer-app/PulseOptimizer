@@ -48,6 +48,8 @@ public class AppState
     public Dictionary<string, Pulse.Core.Games.GameConfigBackup> GameConfigBackups { get; set; } = new();
     /// <summary>Games the user added with "Add a game".</summary>
     public List<Pulse.Core.Games.CustomGame> CustomGames { get; set; } = new();
+    /// <summary>The Roblox page: launch-through-Pulse and the chosen Roblox settings.</summary>
+    public Pulse.Core.Roblox.RobloxSettings Roblox { get; set; } = new();
 }
 
 /// <summary>Applies and undoes tweaks, keeping a backup of every value it changes on disk.</summary>

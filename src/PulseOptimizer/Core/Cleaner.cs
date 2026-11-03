@@ -132,6 +132,14 @@ public static class Cleaner
         },
         new CleanCategory
         {
+            Id = "roblox", Name = "Roblox cache", Glyph = "\uE7FC", Selected = false,
+            Description = "Downloaded assets and logs Roblox keeps in its temp folder. Roblox downloads what it needs again.",
+            Warning = "Close Roblox first. Experiences load a little slower the first time afterwards.",
+            MinAge = TimeSpan.FromHours(1),
+            Targets = () => new[] { new CleanTarget(Path.Combine(Path.GetTempPath(), "Roblox")), new CleanTarget(Local(@"Roblox\logs")) }
+        },
+        new CleanCategory
+        {
             Id = "shaders", Name = "Graphics shader cache", Glyph = "", Selected = false,
             Description = "Pre-compiled shaders saved by your graphics driver so games load faster.",
             Warning = "Games will rebuild these and may stutter for the first few minutes. Only worth clearing after a driver update or if you see graphics glitches.",

@@ -11,6 +11,28 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, args) => args.SetObserved();
         base.OnStartup(e);
 
+        // Roblox's Play button (when Roblox launches through Pulse): no window, no admin rights needed.
+        int r = Array.FindIndex(e.Args, a => a.Equals("--roblox", StringComparison.OrdinalIgnoreCase));
+        if (r >= 0)
+        {
+            try { Core.Roblox.RobloxBoost.HandleLaunch(r + 1 < e.Args.Length ? e.Args[r + 1] : ""); } catch { }
+            Shutdown();
+            return;
+        }
+
+        // The app itself changes system settings, so it runs as administrator.
+        if (!IsAdmin() && !e.Args.Contains("--tune-up", StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!, string.Join(" ", e.Args.Select(a => "\"" + a + "\"")))
+                { UseShellExecute = true, Verb = "runas" });
+            }
+            catch { /* the user said no to the admin prompt */ }
+            Shutdown();
+            return;
+        }
+
         // The weekly scheduled run: no window, just the safe clean-up and a drift check.
         if (e.Args.Contains("--tune-up", StringComparer.OrdinalIgnoreCase))
         {
@@ -19,6 +41,12 @@ public partial class App : Application
             return;
         }
         new Pulse.MainWindow().Show();
+    }
+
+    static bool IsAdmin()
+    {
+        using var id = System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new System.Security.Principal.WindowsPrincipal(id).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
     }
 
     void OnUiError(object sender, DispatcherUnhandledExceptionEventArgs e)
