@@ -115,9 +115,9 @@ public partial class DeclutterPage : UserControl, IPage
         _ = appsTask.ContinueWith(t => Dispatcher.Invoke(() =>
         {
             _apps = t.IsCompletedSuccessfully ? t.Result : new();
-            AppList.ItemsSource = _apps;
             AppsLoading.Visibility = Visibility.Collapsed;
-            AppsEmpty.Visibility = _apps.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            AppsSummary.Text = $"{_apps.Count} apps · {Format.Bytes(_apps.Sum(a => a.Size))}";
+            ShowApps();
         }));
         _ = dismTask.ContinueWith(t => Dispatcher.Invoke(() =>
         {
@@ -293,12 +293,100 @@ public partial class DeclutterPage : UserControl, IPage
 
     // ───────── Apps ─────────
 
+    string _tab = "Suggested";
+    int _shown = 40;
+
+    IEnumerable<AppEntry> FilteredApps()
+    {
+        var q = AppSearch?.Text?.Trim() ?? "";
+        IEnumerable<AppEntry> list = _tab switch
+        {
+            "Suggested" => _apps.Where(a => a.Suggested),
+            "Game" => _apps.Where(a => a.Kind == "Game"),
+            _ => _apps.OrderByDescending(a => a.Size),
+        };
+        if (q.Length > 0) list = _apps.Where(a => a.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || a.Publisher.Contains(q, StringComparison.OrdinalIgnoreCase)).OrderByDescending(a => a.Size);
+        return list;
+    }
+
+    void ShowApps()
+    {
+        if (AppList == null) return;
+        var all = FilteredApps().ToList();
+        AppList.ItemsSource = all.Take(_shown).ToList();
+        AppsEmpty.Text = _tab == "Suggested" && AppSearch.Text.Length == 0 ? "No preinstalled extras found. Check the Games and All programs tabs." : "Nothing matches.";
+        AppsEmpty.Visibility = all.Count == 0 && AppsLoading.Visibility != Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        ShowMoreBtn.Visibility = all.Count > _shown ? Visibility.Visible : Visibility.Collapsed;
+        ShowMoreBtn.Content = $"Show {Math.Min(40, all.Count - _shown)} more";
+        UpdateBulk();
+    }
+
+    void AppTab_Checked(object sender, RoutedEventArgs e)
+    {
+        _tab = (sender as FrameworkElement)?.Tag as string ?? "Suggested";
+        _shown = 40;
+        ShowApps();
+    }
+
+    void AppSearch_Changed(object sender, TextChangedEventArgs e) { _shown = 40; ShowApps(); }
+    void ShowMore_Click(object sender, RoutedEventArgs e) { _shown += 40; ShowApps(); }
+    void AppPick_Click(object sender, RoutedEventArgs e) => UpdateBulk();
+
+    void BulkClear_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var a in _apps) a.Selected = false;
+        UpdateBulk();
+    }
+
+    void UpdateBulk()
+    {
+        var picked = _apps.Where(a => a.Selected).ToList();
+        BulkBar.Visibility = picked.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        BulkText.Text = $"{picked.Count} selected · {Format.Bytes(picked.Sum(a => a.Size))}";
+        BulkBtnText.Text = $"Remove {picked.Count}";
+    }
+
+    async void BulkRemove_Click(object sender, RoutedEventArgs e)
+    {
+        var picked = _apps.Where(a => a.Selected && a.CanRemove).ToList();
+        if (picked.Count == 0) return;
+        int store = picked.Count(a => a.IsStoreApp), other = picked.Count - store;
+        var lines = string.Join("\n", picked.Take(12).Select(a => $"•  {a.Name}{(a.Size > 0 ? $" ({Format.Bytes(a.Size)})" : "")}"))
+                    + (picked.Count > 12 ? $"\n…and {picked.Count - 12} more" : "");
+        var note = other > 0
+            ? $"\n\nPulse runs each program's own uninstaller one at a time. Some show a window you need to click through.{(picked.Any(a => !a.Wait) ? " Steam games are removed through Steam, which asks you to confirm." : "")}"
+            : "\n\nStore apps can be reinstalled from the Microsoft Store any time.";
+        if (!await MainWindow.Instance.Confirm($"Remove {picked.Count} app{(picked.Count == 1 ? "" : "s")}?", lines + note, "Remove")) return;
+
+        BulkBtn.IsEnabled = false;
+        long before = SystemInfo.SystemDrive.AvailableFreeSpace;
+        int done = 0, failed = 0;
+        MainWindow.Instance.ShowBusy("Removing apps", "Keep Pulse open until this finishes.");
+        foreach (var app in picked)
+        {
+            MainWindow.Instance.SetBusyStatus($"{done + failed + 1} of {picked.Count}: {app.Name}…");
+            app.Busy = true;
+            var (ok, _) = await Task.Run(() => app.IsStoreApp ? DeclutterEngine.RemoveStoreApp(app) : DeclutterEngine.StartUninstaller(app));
+            bool gone = ok && (app.IsStoreApp || !app.Wait || !await Task.Run(() => DeclutterEngine.StillInstalled(app)));
+            app.Busy = false;
+            if (gone) { app.Removed = true; done++; } else failed++;
+        }
+        MainWindow.Instance.HideOverlay();
+        BulkBtn.IsEnabled = true;
+        long freed = Math.Max(SystemInfo.SystemDrive.AvailableFreeSpace - before, 0);
+        TweakEngine.AddLog("apps", $"Removed {done} apps, freed {Format.Bytes(freed)}");
+        UpdateBulk();
+        UpdateDriveText();
+        await MainWindow.Instance.Alert($"Removed {done} of {picked.Count}",
+            $"Freed {Format.Bytes(freed)}." + (failed > 0 ? $" {failed} {(failed == 1 ? "is" : "are")} still installed: the uninstaller was cancelled or needs a restart to finish." : ""));
+    }
+
     async void RemoveApp_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not AppEntry app || app.Busy) return;
         var text = app.IsStoreApp
-            ? $"{app.Why}. It's removed for your account and can be reinstalled from the Microsoft Store any time."
-            : $"{app.Why}. Pulse opens the program's own uninstaller; follow its steps to finish.";
+            ? $"{(app.Why.Length > 0 ? app.Why + ". " : "")}It's removed for your account and can be reinstalled from the Microsoft Store any time."
+            : $"Pulse runs {app.Name}'s own uninstaller{(app.Wait ? "; follow its steps if it shows a window" : " through Steam")}.";
         if (!await MainWindow.Instance.Confirm($"Remove {app.Name}?", text, "Remove")) return;
 
         app.Busy = true;
@@ -306,9 +394,14 @@ public partial class DeclutterPage : UserControl, IPage
         {
             var (ok, msg) = await Task.Run(() => app.IsStoreApp ? DeclutterEngine.RemoveStoreApp(app) : DeclutterEngine.StartUninstaller(app));
             if (!ok) { await MainWindow.Instance.Alert($"Couldn't remove {app.Name}", msg); return; }
-            if (app.IsStoreApp) { app.Removed = true; MainWindow.Instance.Toast($"Removed {app.Name}."); }
-            else MainWindow.Instance.Toast($"{app.Name}'s uninstaller is open.", ToastKind.Info);
+            if (app.IsStoreApp || (app.Wait && !await Task.Run(() => DeclutterEngine.StillInstalled(app))))
+            {
+                app.Removed = true;
+                MainWindow.Instance.Toast($"Removed {app.Name}.");
+                UpdateDriveText();
+            }
+            else MainWindow.Instance.Toast(app.Wait ? $"{app.Name} is still installed. The uninstaller may have been cancelled." : $"Confirm the uninstall in Steam.", ToastKind.Info);
         }
-        finally { app.Busy = false; }
+        finally { app.Busy = false; UpdateBulk(); }
     }
 }

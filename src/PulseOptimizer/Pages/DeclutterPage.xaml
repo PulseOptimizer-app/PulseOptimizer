@@ -114,35 +114,73 @@
             </Border>
 
             <!-- Apps -->
-            <TextBlock Style="{StaticResource H2}" Text="Apps you might not need" Margin="0,28,0,4"/>
+            <Grid Margin="0,28,0,4">
+                <TextBlock Style="{StaticResource H2}" Text="Apps and games"/>
+                <TextBlock x:Name="AppsSummary" HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+            </Grid>
             <TextBlock Style="{StaticResource Body}" Margin="0,0,0,12" MaxWidth="760" HorizontalAlignment="Left"
-                       Text="Preinstalled apps and trials worth a look. Store apps can be reinstalled from the Microsoft Store any time; desktop programs open their own uninstaller."/>
+                       Text="Everything installed, biggest first. Tick what you don't use and remove it in one go. Store apps can be reinstalled from the Microsoft Store; programs and games run their own uninstaller. Drivers and shared runtimes aren't listed, so you can't break anything by accident."/>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="260"/></Grid.ColumnDefinitions>
+                <WrapPanel x:Name="AppTabs" VerticalAlignment="Center">
+                    <RadioButton Style="{StaticResource Chip}" GroupName="AppTab" Tag="Suggested" Content="Suggested" IsChecked="True" Checked="AppTab_Checked"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="AppTab" Tag="Game" Content="Games" Checked="AppTab_Checked"/>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="AppTab" Tag="All" Content="All programs" Checked="AppTab_Checked"/>
+                </WrapPanel>
+                <TextBox x:Name="AppSearch" Grid.Column="1" Style="{StaticResource SearchBox}" Tag="Search apps" TextChanged="AppSearch_Changed" VerticalAlignment="Top"/>
+            </Grid>
+
+            <!-- Bulk bar -->
+            <Border x:Name="BulkBar" CornerRadius="12" Padding="16,10" Margin="0,0,0,10" Background="{StaticResource Surface2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Visibility="Collapsed">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="BulkText" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Clear" Margin="14,0,0,0" Click="BulkClear_Click" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button x:Name="BulkBtn" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Right" Click="BulkRemove_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" Style="{StaticResource IconText}" FontSize="13"/>
+                            <TextBlock x:Name="BulkBtnText" Text="Remove selected" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
             <StackPanel x:Name="AppsLoading" Orientation="Horizontal">
                 <ui:Spinner Width="18" Height="18" Brush="{StaticResource AccentGradient}"/>
                 <TextBlock Text="Looking at your apps…" Margin="10,0,0,0" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
             </StackPanel>
-            <TextBlock x:Name="AppsEmpty" Style="{StaticResource Body}" Visibility="Collapsed" Text="Nothing to remove here. No preinstalled extras were found."/>
-            <ItemsControl x:Name="AppList">
+            <TextBlock x:Name="AppsEmpty" Style="{StaticResource Body}" Visibility="Collapsed" Text="Nothing here."/>
+            <ItemsControl x:Name="AppList" VirtualizingPanel.IsVirtualizing="True">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,8" Padding="18,14" ui:Anim.Reveal="True"
+                        <Border Style="{StaticResource HoverCard}" Margin="0,0,0,6" Padding="14,10" ui:Anim.Reveal="True"
                                 Opacity="{Binding Removed, Converter={StaticResource BoolToOpacity}, ConverterParameter=invert}">
                             <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <Border Width="38" Height="38" CornerRadius="10" Background="{StaticResource AccentGradient}" Margin="0,0,14,0">
-                                    <TextBlock Text="{Binding Initial}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis">
-                                        <Run Text="{Binding Why, Mode=OneWay}"/><Run Text="  ·  "/><Run Text="{Binding Source, Mode=OneWay}"/>
-                                    </TextBlock>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="34"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Style="{StaticResource Tick}" IsChecked="{Binding Selected, Mode=TwoWay}" IsEnabled="{Binding CanRemove}" Click="AppPick_Click" VerticalAlignment="Center"/>
+                                <!-- The app's own icon; a quiet monogram if it has none -->
+                                <Grid Grid.Column="1" Width="34" Height="34" Margin="0,0,14,0">
+                                    <Border CornerRadius="8" Background="{StaticResource Surface2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                            Visibility="{Binding HasIcon, Converter={StaticResource InverseBoolToVis}}">
+                                        <TextBlock Text="{Binding Initial}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Image Source="{Binding Icon}" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                </Grid>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Detail}" FontSize="11.5" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
+                                               Visibility="{Binding Detail, Converter={StaticResource HasValueToVis}}"/>
                                 </StackPanel>
-                                <TextBlock Grid.Column="2" Text="{Binding SizeText}" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Margin="12,0"/>
-                                <Border Grid.Column="3" Style="{StaticResource Pill}" Background="{Binding AdviceBackground}" Margin="0,0,12,0">
+                                <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0"/>
+                                <Border Grid.Column="4" Style="{StaticResource Pill}" Background="{Binding AdviceBackground}" Margin="0,0,12,0"
+                                        Visibility="{Binding HasAdvice, Converter={StaticResource BoolToVis}}">
                                     <TextBlock Style="{StaticResource PillText}" Text="{Binding AdviceText}" Foreground="{Binding AdviceBrush}"/>
                                 </Border>
-                                <Grid Grid.Column="4" Width="96">
+                                <Grid Grid.Column="5" Width="92">
                                     <Button Style="{StaticResource GhostButton}" Content="Remove" Click="RemoveApp_Click" Tag="{Binding}"
                                             Visibility="{Binding CanRemove, Converter={StaticResource BoolToVis}}" IsEnabled="{Binding Busy, Converter={StaticResource InverseBool}}"/>
                                     <TextBlock Text="Removed" Foreground="{StaticResource GoodBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -153,6 +191,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <Button x:Name="ShowMoreBtn" Style="{StaticResource GhostButton}" HorizontalAlignment="Center" Margin="0,8,0,0" Click="ShowMore_Click" Visibility="Collapsed"/>
 
             <TextBlock Style="{StaticResource Body}" FontSize="12" Foreground="{StaticResource TextFaintBrush}" Margin="0,18,0,0" MaxWidth="760" HorizontalAlignment="Left"
                        Text="Freeing space doesn't make a PC faster on its own, but a nearly full drive does slow Windows and game updates down. Pulse never touches the WinSxS folder by hand; Microsoft warns that can break Windows."/>

@@ -577,11 +577,11 @@
 
 
     <!-- ═════════ Game tile (DataContext: GameItem) ═════════
-         Cover art when Steam has it, otherwise the game's own icon on a blurred copy of itself, otherwise its colors.
-         Hover lifts and zooms the art; Running shows a live badge. -->
+         Dark card with a soft glow in the game's color, its real icon floating in the middle (or Steam cover art,
+         full-bleed), name and status underneath. Hover lifts the card, brightens the glow and grows the icon. -->
     <Style x:Key="GameTile" TargetType="Button">
-        <Setter Property="Width" Value="128"/>
-        <Setter Property="Height" Value="172"/>
+        <Setter Property="Width" Value="132"/>
+        <Setter Property="Height" Value="176"/>
         <Setter Property="Margin" Value="0,0,14,14"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -595,76 +595,75 @@
                                 <TranslateTransform x:Name="Lift"/>
                             </TransformGroup>
                         </Grid.RenderTransform>
-                        <Border x:Name="Shadow" CornerRadius="12" Background="#000000" Opacity="0" Margin="4,10,4,-6">
-                            <Border.Effect><BlurEffect Radius="18"/></Border.Effect>
+                        <Border x:Name="Shadow" CornerRadius="14" Background="#000000" Opacity="0" Margin="6,14,6,-8">
+                            <Border.Effect><BlurEffect Radius="20"/></Border.Effect>
                         </Border>
-                        <Border x:Name="Card" CornerRadius="12" Background="{Binding Tint}" ClipToBounds="True">
-                            <Border.Clip>
-                                <RectangleGeometry Rect="0,0,128,172" RadiusX="12" RadiusY="12"/>
-                            </Border.Clip>
+                        <Border x:Name="Card" CornerRadius="14" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                             <Grid>
-                                <!-- Blurred icon fills the tile behind the sharp one -->
-                                <Image Source="{Binding Icon}" Stretch="UniformToFill" Opacity="0.55" Margin="-30"
-                                       Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}">
-                                    <Image.Effect><BlurEffect Radius="34"/></Image.Effect>
-                                </Image>
+                                <Grid.Clip><RectangleGeometry Rect="0,0,130,174" RadiusX="13" RadiusY="13"/></Grid.Clip>
+                                <!-- Color glow -->
+                                <Ellipse x:Name="Glow" Width="230" Height="190" VerticalAlignment="Top" Margin="0,-70,0,0" Fill="{Binding Glow}" Opacity="0.75"/>
+                                <!-- Steam cover art, full-bleed -->
                                 <Image x:Name="Art" Source="{Binding CoverImage}" Stretch="UniformToFill" RenderTransformOrigin="0.5,0.5"
                                        Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
                                     <Image.RenderTransform><ScaleTransform x:Name="ArtSc"/></Image.RenderTransform>
                                 </Image>
-                                <Border Width="64" Height="64" CornerRadius="14" VerticalAlignment="Top" Margin="0,30,0,0" ClipToBounds="True">
-                                    <Border.Visibility>
-                                        <MultiBinding Converter="{StaticResource IconOnlyVis}">
-                                            <Binding Path="HasIcon"/>
-                                            <Binding Path="HasCover"/>
-                                        </MultiBinding>
-                                    </Border.Visibility>
-                                    <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                </Border>
-                                <TextBlock Text="{Binding Short}" FontFamily="{StaticResource DisplayFont}" FontSize="26" FontWeight="Bold" Foreground="#F2FFFFFF"
-                                           HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,48,0,0"
-                                           Visibility="{Binding ShowLetters, Converter={StaticResource BoolToVis}}"/>
-                                <!-- Bottom shade + name -->
-                                <Border VerticalAlignment="Bottom" Height="76">
+                                <Border VerticalAlignment="Bottom" Height="90" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
                                     <Border.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="#00000000" Offset="0"/>
-                                            <GradientStop Color="#D9000000" Offset="1"/>
+                                            <GradientStop Color="#000B0C10" Offset="0"/>
+                                            <GradientStop Color="#F00B0C10" Offset="0.85"/>
                                         </LinearGradientBrush>
                                     </Border.Background>
                                 </Border>
-                                <StackPanel VerticalAlignment="Bottom" Margin="10,0,10,10">
-                                    <TextBlock Text="{Binding Name}" Foreground="White" FontWeight="SemiBold" FontSize="12.5" TextWrapping="Wrap" MaxHeight="34"/>
-                                    <TextBlock Text="{Binding StatusText}" Foreground="#B3FFFFFF" FontSize="10.5" Margin="0,1,0,0"/>
-                                </StackPanel>
-                                <!-- Running badge -->
-                                <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" CornerRadius="6" Padding="6,2,7,3" Background="#CC0B0C10"
-                                        Visibility="{Binding Running, Converter={StaticResource BoolToVis}}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{StaticResource GoodBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Running" Foreground="White" FontSize="10.5" FontWeight="SemiBold"/>
+                                <!-- Icon (or letters) floating in the middle -->
+                                <Grid x:Name="Badge" Width="68" Height="68" VerticalAlignment="Top" Margin="0,30,0,0" RenderTransformOrigin="0.5,0.5"
+                                      Visibility="{Binding HasCover, Converter={StaticResource InverseBoolToVis}}">
+                                    <Grid.RenderTransform><ScaleTransform x:Name="BadgeSc"/></Grid.RenderTransform>
+                                    <Grid.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="6" Direction="270" Opacity="0.5" Color="Black"/></Grid.Effect>
+                                    <Border CornerRadius="16" Background="{Binding Tint}" Visibility="{Binding ShowLetters, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="{Binding Short}" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="SemiBold" Foreground="White"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border CornerRadius="16" ClipToBounds="True" Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}">
+                                        <Border.Clip><RectangleGeometry Rect="0,0,68,68" RadiusX="16" RadiusY="16"/></Border.Clip>
+                                        <Image Source="{Binding Icon}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Border>
+                                </Grid>
+                                <!-- Name + status -->
+                                <StackPanel VerticalAlignment="Bottom" Margin="12,0,12,12">
+                                    <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="{StaticResource GoodBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextDimBrush}" FontSize="11"/>
                                     </StackPanel>
-                                </Border>
+                                </StackPanel>
                             </Grid>
                         </Border>
-                        <Border x:Name="Ring" CornerRadius="12" BorderThickness="2" BorderBrush="{StaticResource AccentGradient}" Opacity="0"/>
+                        <Border x:Name="Ring" CornerRadius="14" BorderThickness="1.5" BorderBrush="{StaticResource AccentGradient}" Opacity="0"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Trigger.EnterActions>
                                 <BeginStoryboard><Storyboard>
                                     <DoubleAnimation Storyboard.TargetName="Lift" Storyboard.TargetProperty="Y" To="-5" Duration="0:0:0.22"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.45"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.45"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="Shadow" Storyboard.TargetProperty="Opacity" To="0.6" Duration="0:0:0.22"/>
+                                    <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.3"><DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.4"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.3"><DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.4"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleX" To="1.07" Duration="0:0:0.45"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1.07" Duration="0:0:0.45"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
+                                    <DoubleAnimation Storyboard.TargetName="Shadow" Storyboard.TargetProperty="Opacity" To="0.55" Duration="0:0:0.22"/>
                                     <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.22"/>
                                 </Storyboard></BeginStoryboard>
                             </Trigger.EnterActions>
                             <Trigger.ExitActions>
                                 <BeginStoryboard><Storyboard>
                                     <DoubleAnimation Storyboard.TargetName="Lift" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.25"/>
+                                    <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.25"/>
+                                    <DoubleAnimation Storyboard.TargetName="BadgeSc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.25"/>
                                     <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.35"/>
                                     <DoubleAnimation Storyboard.TargetName="ArtSc" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.35"/>
+                                    <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0.75" Duration="0:0:0.3"/>
                                     <DoubleAnimation Storyboard.TargetName="Shadow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25"/>
                                     <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25"/>
                                 </Storyboard></BeginStoryboard>
@@ -687,12 +686,17 @@
                         <DataTrigger Binding="{Binding Running}" Value="True">
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard><Storyboard RepeatBehavior="Forever" AutoReverse="True">
-                                    <DoubleAnimation Storyboard.TargetName="LiveDot" Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:0.8"/>
+                                    <DoubleAnimation Storyboard.TargetName="StatusDot" Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:0.8"/>
                                 </Storyboard></BeginStoryboard>
                             </DataTrigger.EnterActions>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Dim}" Value="True">
-                            <Setter TargetName="Card" Property="Opacity" Value="0.55"/>
+                            <Setter TargetName="Badge" Property="Opacity" Value="0.4"/>
+                            <Setter TargetName="Glow" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="StatusDot" Property="Fill" Value="{StaticResource TextFaintBrush}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Game.Id}" Value="other">
+                            <Setter TargetName="StatusDot" Property="Fill" Value="{StaticResource AccentBrush}"/>
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

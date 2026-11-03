@@ -25,6 +25,7 @@ public class GameItem : Observable
     public bool Dim => !Installed && Game.Id != "other";
     public string Short => Game.Short;
     public System.Windows.Media.Brush Tint => GameArt.Tint(Game);
+    public System.Windows.Media.Brush Glow => GameArt.Glow(Game);
     public System.Windows.Media.ImageSource Icon { get; set; }
     public System.Windows.Media.ImageSource CoverImage { get; set; }
     public bool HasIcon => Icon != null;
@@ -202,19 +203,34 @@ public static class LatencyPlan
         steps.Add(new PlanStep
         {
             Id = "mouse", Done = T("mouse"),
-            Title = "Set your mouse to its highest polling rate",
-            Detail = "In your mouse's software, choose 1000 Hz or higher. NVIDIA measured up to 3 ms extra delay at 125 Hz. DPI doesn't change delay. Test it on the Measure page.",
+            Title = "Set up your mouse for the lowest delay",
+            Detail = string.Join("\n", new[]
+            {
+                "•  Polling rate: 1000 Hz or higher in your mouse's software. At 125 Hz, NVIDIA measured up to 3 ms extra delay. 4000–8000 Hz only helps on a fast CPU and a high-refresh monitor; on slower CPUs it can cost FPS in CS2, VALORANT and Fortnite.",
+                "•  Connection: a cable or the mouse's own 2.4 GHz receiver, never Bluetooth. Plug it into a port on the back of the PC, not a hub or the monitor.",
+                "•  DPI: 800–1600 is a good range. A higher DPI reports small movements a little sooner; if you raise it, lower your in-game sensitivity so it feels the same.",
+                "•  In the game: raw input on (where offered), mouse acceleration and smoothing off.",
+                "•  Windows' \"Enhance pointer precision\" adds acceleration. Turn it off in Tweaks so your desktop and game aim match.",
+            }),
             ActionKey = "page:measure", ActionText = "Test my mouse",
         });
 
-        // 6. The settings that cost the most frames in this game.
-        if (g.FpsSettings.Length > 0)
+        // 6. The settings pros use, then the ones that cost the most frames.
+        var pro = g.ProSettings ?? Array.Empty<string>();
+        if (pro.Length > 0 || g.FpsSettings.Length > 0)
+        {
+            var parts = new List<string>();
+            if (pro.Length > 0) parts.Add(string.Join("\n", pro.Select(f => "•  " + f)));
+            if (g.FpsSettings.Length > 0)
+                parts.Add((pro.Length > 0 ? "Still short on FPS?\n" : "") + string.Join("\n", g.FpsSettings.Select(f => "•  " + f)));
+            if (g.ProSource.Length > 0) parts.Add("Based on " + g.ProSource + ". Sensitivity is personal: copy the setup, then adjust.");
             steps.Add(new PlanStep
             {
                 Id = "fps", Done = T("fps"),
-                Title = g.Id == "other" ? "Lower the settings that cost the most FPS" : $"Get more FPS in {g.Name}",
-                Detail = string.Join("\n", g.FpsSettings.Select(f => "•  " + f)),
+                Title = pro.Length > 0 ? $"Use the settings pros use in {g.Name}" : g.Id == "other" ? "Lower the settings that cost the most FPS" : $"Get more FPS in {g.Name}",
+                Detail = string.Join("\n\n", parts),
             });
+        }
 
         if (g.Note.Length > 0 && g.Id != "other")
             steps.Add(new PlanStep { Id = "note", Done = T("note"), Title = $"{g.Name} tip", Detail = g.Note });

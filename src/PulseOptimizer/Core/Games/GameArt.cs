@@ -24,6 +24,15 @@ public static class GameArt
         return b;
     }
 
+    /// <summary>A soft radial glow in the game's main color, for the top of its tile.</summary>
+    public static Brush Glow(KnownGame g)
+    {
+        var c = (Color)ColorConverter.ConvertFromString(g.Color1);
+        var b = new RadialGradientBrush(Color.FromArgb(0x66, c.R, c.G, c.B), Color.FromArgb(0, c.R, c.G, c.B));
+        b.Freeze();
+        return b;
+    }
+
     /// <summary>Finds the icon and cover for one game. Slow-ish (disk), so call off the UI thread.</summary>
     public static (ImageSource icon, ImageSource cover) Find(KnownGame g)
     {

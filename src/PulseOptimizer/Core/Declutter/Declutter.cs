@@ -38,23 +38,53 @@ public class AppEntry : Observable
 {
     public string Name { get; init; }
     public string Publisher { get; init; } = "";
-    public long Size { get; init; }
+    public long Size { get; set; }
     public string Why { get; init; } = "";
     public AppAdvice Advice { get; init; }
     public bool IsStoreApp { get; init; }
     /// <summary>Store apps: package full name. Desktop apps: uninstall command.</summary>
     public string RemoveKey { get; init; }
     public DateTime? Installed { get; init; }
+    /// <summary>Suggested (known bloat), Game, or Program.</summary>
+    public string Kind { get; init; } = "Program";
+    public bool Suggested { get; init; }
+    public string IconPath { get; init; }
+    public string InstallLocation { get; init; }
+    public bool Wait { get; init; } = true;
+
+    System.Windows.Media.ImageSource _icon;
+    bool _iconLoaded;
+    /// <summary>The program's own icon, loaded the first time it's shown.</summary>
+    public System.Windows.Media.ImageSource Icon
+    {
+        get
+        {
+            if (!_iconLoaded)
+            {
+                _iconLoaded = true;
+                var path = IconPath;
+                Task.Run(() => IsStoreApp ? DeclutterEngine.StoreLogo(path) : Native.LargeIcon(path, 64))
+                    .ContinueWith(t => { if (t.Result != null) { _icon = t.Result; Raise(nameof(Icon)); Raise(nameof(HasIcon)); } });
+            }
+            return _icon;
+        }
+    }
+    public bool HasIcon => _icon != null;
+
+    bool _selected;
+    public bool Selected { get => _selected; set => Set(ref _selected, value && CanRemove); }
 
     bool _busy, _removed;
     public bool Busy { get => _busy; set => Set(ref _busy, value); }
-    public bool Removed { get => _removed; set { if (Set(ref _removed, value)) Raise(nameof(CanRemove)); } }
-    public bool CanRemove => Advice != AppAdvice.Keep && !Removed;
+    public bool Removed { get => _removed; set { if (Set(ref _removed, value)) { Raise(nameof(CanRemove)); Selected = false; } } }
+    public bool CanRemove => Advice != AppAdvice.Keep && !Removed && !string.IsNullOrEmpty(RemoveKey);
 
     public string SizeText => Size > 0 ? Format.Bytes(Size) : "";
-    public string AdviceText => Advice switch { AppAdvice.Safe => "Safe to remove", AppAdvice.Keep => "Keep", _ => "Check first" };
-    public Brush AdviceBrush => Advice switch { AppAdvice.Safe => Palette.Good, AppAdvice.Keep => Palette.Info, _ => Palette.Warn };
-    public Brush AdviceBackground => Advice switch { AppAdvice.Safe => Palette.GoodSoft, AppAdvice.Keep => Palette.InfoSoft, _ => Palette.WarnSoft };
+    public string AdviceText => !Suggested ? (Kind == "Game" ? "Game" : "") : Advice switch { AppAdvice.Safe => "Safe to remove", AppAdvice.Keep => "Keep", _ => "Check first" };
+    public bool HasAdvice => AdviceText.Length > 0;
+    public string Detail => string.Join("  ·  ", new[] { Why, Publisher, Installed is DateTime d ? $"Installed {d:MMM yyyy}" : "" }.Where(x => !string.IsNullOrEmpty(x)).Distinct());
+    public Brush AdviceBrush => !Suggested ? Palette.Info : Advice switch { AppAdvice.Safe => Palette.Good, AppAdvice.Keep => Palette.Info, _ => Palette.Warn };
+    public Brush AdviceBackground => !Suggested ? Palette.InfoSoft : Advice switch { AppAdvice.Safe => Palette.GoodSoft, AppAdvice.Keep => Palette.InfoSoft, _ => Palette.WarnSoft };
     public string Initial => string.IsNullOrEmpty(Name) ? "?" : Name[..1].ToUpperInvariant();
     public string Source => IsStoreApp ? "Microsoft Store app" : "Desktop program";
 }
@@ -344,12 +374,23 @@ public static class DeclutterEngine
         ("WinZip", AppAdvice.Check, "Windows opens zip files on its own"),
     };
 
-    /// <summary>Store apps from the bloat list that are installed for this user, plus desktop programs worth a look.</summary>
+    static readonly string[] GamePublishers =
+    {
+        "Valve", "Riot Games", "Epic Games", "Blizzard", "Ubisoft", "Electronic Arts", "EA ", "Activision", "Bethesda", "Rockstar",
+        "Roblox", "Mojang", "NetEase", "HoYoverse", "miHoYo", "Bandai Namco", "CAPCOM", "SEGA", "Square Enix", "2K", "Krafton",
+        "Embark", "Respawn", "Bungie", "Behaviour", "Paradox", "CD PROJEKT", "FromSoftware", "Larian", "Supercell", "Wargaming",
+    };
+
+    /// <summary>
+    /// Every removable app on this PC: known preinstalled extras (marked Suggested), games, and all other desktop programs,
+    /// each with its size. Takes a little while: call off the UI thread.
+    /// </summary>
     public static List<AppEntry> Apps()
     {
         var list = new List<AppEntry>();
+        var launcherGames = PcDiagnostics.LauncherGames();
 
-        // Store apps (removed per user with Remove-AppxPackage; reinstallable from the Microsoft Store).
+        // Store apps from the known list (removed per user with Remove-AppxPackage; reinstallable from the Microsoft Store).
         try
         {
             var r = Shell.PowerShell("ConvertTo-Json -Compress -InputObject @(Get-AppxPackage | Where-Object { -not $_.IsFramework -and $_.SignatureKind -ne 'System' } | ForEach-Object { [pscustomobject]@{ N = $_.Name; F = $_.PackageFullName; L = [string]$_.InstallLocation } })", 90_000);
@@ -359,16 +400,18 @@ public static class DeclutterEngine
                 var name = e.GetProperty("N").GetString() ?? "";
                 var rule = StoreBloat.FirstOrDefault(b => name.Contains(b.match, StringComparison.OrdinalIgnoreCase));
                 if (rule.match == null) continue;
+                var loc = e.GetProperty("L").GetString();
                 list.Add(new AppEntry
                 {
-                    Name = FriendlyStoreName(name), Advice = rule.advice, Why = rule.why, IsStoreApp = true,
-                    RemoveKey = e.GetProperty("F").GetString(), Size = FolderSize(e.GetProperty("L").GetString()),
+                    Name = FriendlyStoreName(name), Advice = rule.advice, Why = rule.why, IsStoreApp = true, Suggested = true, Kind = "Suggested",
+                    RemoveKey = e.GetProperty("F").GetString(), Size = FolderSize(loc), IconPath = loc, InstallLocation = loc,
                 });
             }
         }
         catch { }
 
-        // Desktop programs.
+        // Desktop programs and games, from Windows' installed-programs list.
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (hive, path) in new[]
         {
             (RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
@@ -381,22 +424,96 @@ public static class DeclutterEngine
                 var k = $@"{path}\{sub}";
                 if (Reg.Get(hive, k, "DisplayName") is not string name || name.Length == 0) continue;
                 if (Reg.Get(hive, k, "SystemComponent") is int sc && sc == 1) continue;
-                var rule = DesktopBloat.FirstOrDefault(b => name.Contains(b.match, StringComparison.OrdinalIgnoreCase));
-                if (rule.match == null) continue;
+                if (Reg.Get(hive, k, "ParentKeyName") is string) continue; // updates and sub-components
+                if (Reg.Get(hive, k, "ReleaseType") is string rt && rt.Contains("Update", StringComparison.OrdinalIgnoreCase)) continue;
+                if (IsRuntime(name)) continue;
                 var uninstall = (Reg.Get(hive, k, "QuietUninstallString") ?? Reg.Get(hive, k, "UninstallString")) as string;
-                if (string.IsNullOrEmpty(uninstall)) continue;
+                if (string.IsNullOrEmpty(uninstall) || !seen.Add(name)) continue;
+
+                var publisher = Reg.Get(hive, k, "Publisher") as string ?? "";
+                var loc = (Reg.Get(hive, k, "InstallLocation") as string ?? "").Trim('"');
                 long size = Reg.Get(hive, k, "EstimatedSize") is int kb ? kb * 1024L : 0;
                 DateTime? date = DateTime.TryParseExact(Reg.Get(hive, k, "InstallDate") as string, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var d) ? d : null;
-                if (list.Any(a => a.Name == name)) continue;
+                var rule = DesktopBloat.FirstOrDefault(b => name.Contains(b.match, StringComparison.OrdinalIgnoreCase));
+                bool isGame = sub.StartsWith("Steam App ", StringComparison.OrdinalIgnoreCase)
+                              || launcherGames.Any(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                              || GamePublishers.Any(gp => publisher.StartsWith(gp, StringComparison.OrdinalIgnoreCase)) && !IsLauncher(name);
+
                 list.Add(new AppEntry
                 {
-                    Name = name, Publisher = Reg.Get(hive, k, "Publisher") as string ?? "", Advice = rule.advice, Why = rule.why,
-                    RemoveKey = uninstall, Size = size, Installed = date,
+                    Name = name, Publisher = publisher, Installed = date, InstallLocation = loc,
+                    Suggested = rule.match != null, Advice = rule.match != null ? rule.advice : AppAdvice.Check, Why = rule.why ?? "",
+                    Kind = rule.match != null ? "Suggested" : isGame ? "Game" : "Program",
+                    RemoveKey = PassiveMsi(uninstall), Size = size,
+                    IconPath = Environment.ExpandEnvironmentVariables(Reg.Get(hive, k, "DisplayIcon") as string ?? ""),
+                    // Steam hands the uninstall to its own window and returns at once.
+                    Wait = !uninstall.Contains("steam://", StringComparison.OrdinalIgnoreCase),
                 });
             }
         }
 
-        return list.OrderBy(a => a.Advice switch { AppAdvice.Safe => 0, AppAdvice.Check => 1, _ => 2 }).ThenByDescending(a => a.Size).ToList();
+        // Epic games have no uninstall entry: list them so their size shows, removed from the Epic Games Launcher.
+        foreach (var (name, folder) in launcherGames.Where(g => !seen.Contains(g.Name) && !list.Any(a => a.Name == g.Name)))
+        {
+            if (!folder.Contains("Epic", StringComparison.OrdinalIgnoreCase) && !Directory.Exists(Path.Combine(folder, ".egstore"))) continue;
+            list.Add(new AppEntry { Name = name, Kind = "Game", Why = "Uninstall it from the Epic Games Launcher", InstallLocation = folder, Advice = AppAdvice.Check });
+        }
+
+        // Fill in sizes Windows doesn't know (common for games).
+        Parallel.ForEach(list.Where(a => a.Size == 0 && !string.IsNullOrEmpty(a.InstallLocation) && Directory.Exists(a.InstallLocation)).ToList(),
+            new ParallelOptions { MaxDegreeOfParallelism = 4 }, a => a.Size = FolderSize(a.InstallLocation));
+
+        return list.OrderBy(a => a.Suggested ? (a.Advice switch { AppAdvice.Safe => 0, AppAdvice.Check => 1, _ => 2 }) : 3).ThenByDescending(a => a.Size).ToList();
+    }
+
+    static bool IsLauncher(string name) =>
+        new[] { "Steam", "Epic Games Launcher", "Battle.net", "Ubisoft Connect", "EA app", "Riot Client", "Rockstar Games Launcher" }
+            .Any(l => name.Equals(l, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Shared runtimes other programs depend on. Removing them breaks those programs, so they're never listed.</summary>
+    internal static bool IsRuntime(string name) =>
+        new[] { "Microsoft Visual C++", "Microsoft .NET", "Microsoft Windows Desktop Runtime", "Microsoft ASP.NET", "DirectX", "Microsoft Edge WebView2",
+                "NVIDIA ", "AMD Software", "AMD Chipset", "Intel(R) ", "Realtek", "Microsoft Update Health", "Windows SDK", "Windows Software Development Kit",
+                "Microsoft GameInput", "Microsoft XNA", "Vulkan Run", "PhysX", "Easy Anti-Cheat", "EasyAntiCheat", "BattlEye", "Riot Vanguard", "Microsoft Edge" }
+            .Any(r => name.StartsWith(r, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>"MsiExec.exe /I{GUID}" opens a repair dialog; /X with /passive uninstalls with a progress bar and no questions.</summary>
+    internal static string PassiveMsi(string cmd)
+    {
+        var m = Regex.Match(cmd ?? "", @"msiexec(\.exe)?\s+/[IX]\s*(\{[0-9A-Fa-f-]+\})", RegexOptions.IgnoreCase);
+        return m.Success ? $"MsiExec.exe /X{m.Groups[2].Value} /passive /norestart" : cmd;
+    }
+
+    /// <summary>A Store app's logo from its manifest, picking the closest scaled image.</summary>
+    internal static System.Windows.Media.ImageSource StoreLogo(string installLocation)
+    {
+        try
+        {
+            var manifest = Path.Combine(installLocation, "AppxManifest.xml");
+            if (!File.Exists(manifest)) return null;
+            var xml = File.ReadAllText(manifest);
+            var m = Regex.Match(xml, @"Square44x44Logo=""([^""]+)""") is { Success: true } sq ? sq : Regex.Match(xml, @"<Logo>([^<]+)</Logo>");
+            if (!m.Success) return null;
+            var rel = m.Groups[1].Value;
+            var dir = Path.Combine(installLocation, Path.GetDirectoryName(rel) ?? "");
+            var stem = Path.GetFileNameWithoutExtension(rel);
+            if (!Directory.Exists(dir)) return null;
+            var candidates = Directory.GetFiles(dir, stem + "*.png")
+                .OrderBy(f => f.Contains("contrast", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ThenBy(f => f.Contains("targetsize-48") || f.Contains("scale-200") ? 0 : f.Contains("targetsize-64") || f.Contains("scale-150") ? 1 : 2)
+                .ToList();
+            var file = candidates.FirstOrDefault(f => !f.Contains("contrast", StringComparison.OrdinalIgnoreCase)) ?? candidates.FirstOrDefault();
+            if (file == null) return null;
+            var img = new System.Windows.Media.Imaging.BitmapImage();
+            img.BeginInit();
+            img.UriSource = new Uri(file);
+            img.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            img.DecodePixelWidth = 64;
+            img.EndInit();
+            img.Freeze();
+            return img;
+        }
+        catch { return null; }
     }
 
     internal static string FriendlyStoreName(string package)
@@ -434,16 +551,26 @@ public static class DeclutterEngine
         return (ok, ok ? "" : CmdAction.FirstLine(r.Error) ?? "Windows didn't allow removing this app.");
     }
 
-    /// <summary>Starts the program's own uninstaller (the user finishes it in its window).</summary>
+    /// <summary>Runs the program's own uninstaller and waits for it to close (the user may need to click through it).</summary>
     public static (bool ok, string message) StartUninstaller(AppEntry app)
     {
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Shell.CmdExe, "/c \"" + app.RemoveKey + "\"")
+            using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Shell.CmdExe, "/c \"" + app.RemoveKey + "\"")
             { UseShellExecute = false, CreateNoWindow = true });
-            TweakEngine.AddLog("apps", $"Started the uninstaller for {app.Name}");
+            if (app.Wait) p?.WaitForExit((int)TimeSpan.FromMinutes(30).TotalMilliseconds);
+            TweakEngine.AddLog("apps", $"Ran the uninstaller for {app.Name}");
             return (true, "");
         }
         catch (Exception ex) { return (false, ex.Message); }
     }
+
+    /// <summary>True once the program no longer appears in Windows' installed-programs list.</summary>
+    public static bool StillInstalled(AppEntry app) =>
+        new[]
+        {
+            (RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+            (RegistryHive.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
+            (RegistryHive.CurrentUser, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+        }.Any(h => Reg.SubKeys(h.Item1, h.Item2).Any(sub => Reg.Get(h.Item1, $@"{h.Item2}\{sub}", "DisplayName") as string == app.Name));
 }

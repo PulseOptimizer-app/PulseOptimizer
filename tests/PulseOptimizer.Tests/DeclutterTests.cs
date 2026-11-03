@@ -51,11 +51,35 @@ public class DeclutterTests
     {
         var a = new AppEntry { Name = "Xbox", Advice = AppAdvice.Keep };
         Assert.False(a.CanRemove);
-        var b = new AppEntry { Name = "Tips", Advice = AppAdvice.Safe };
+        var b = new AppEntry { Name = "Tips", Advice = AppAdvice.Safe, RemoveKey = "Microsoft.Getstarted_1.0" };
         Assert.True(b.CanRemove);
         b.Removed = true;
         Assert.False(b.CanRemove);
     }
+
+    [Fact]
+    public void AppsWithoutAnUninstallerCannotBeSelected()
+    {
+        var epic = new AppEntry { Name = "Fortnite", Kind = "Game" };
+        epic.Selected = true;
+        Assert.False(epic.Selected);
+    }
+
+    [Theory]
+    [InlineData("MsiExec.exe /I{12345678-ABCD-1234-ABCD-1234567890AB}", "MsiExec.exe /X{12345678-ABCD-1234-ABCD-1234567890AB} /passive /norestart")]
+    [InlineData("MsiExec.exe /X{12345678-ABCD-1234-ABCD-1234567890AB}", "MsiExec.exe /X{12345678-ABCD-1234-ABCD-1234567890AB} /passive /norestart")]
+    [InlineData("\"C:\\Program Files\\App\\uninst.exe\"", "\"C:\\Program Files\\App\\uninst.exe\"")]
+    public void MsiUninstallsRunWithoutQuestions(string input, string expected) =>
+        Assert.Equal(expected, DeclutterEngine.PassiveMsi(input));
+
+    [Theory]
+    [InlineData("Microsoft Visual C++ 2015-2022 Redistributable (x64)", true)]
+    [InlineData("NVIDIA Graphics Driver 581.57", true)]
+    [InlineData("Riot Vanguard", true)]
+    [InlineData("Discord", false)]
+    [InlineData("Counter-Strike 2", false)]
+    public void SharedRuntimesAndDriversAreNeverListed(string name, bool hidden) =>
+        Assert.Equal(hidden, DeclutterEngine.IsRuntime(name));
 
     [Fact]
     public void ReviewedFilesGoToTheRecycleBinNotPermanentDelete()
