@@ -352,10 +352,10 @@ ConvertTo-Json -Compress -InputObject @($r)";
             {
                 Id = "space", Rank = 4, Severity = Severity.Problem, Title = "Your system drive is nearly full",
                 Detail = detail, Fix = "Windows and games slow down and updates fail when the drive is this full. Clean junk files or move big games to another drive.",
-                ActionKey = "page:cleanup", ActionText = "Clean junk files",
+                ActionKey = "page:cleanup", ActionText = "Open Declutter",
             }
             : new Finding { Id = "space", Rank = 4, Severity = pct < 20 ? Severity.Check : Severity.Ok, Title = "Free space", Detail = detail,
-                            ActionKey = pct < 20 ? "page:cleanup" : "", ActionText = "Clean junk files" };
+                            ActionKey = pct < 20 ? "page:cleanup" : "", ActionText = "Open Declutter" };
     }
 
     // ───────── Startup programs ─────────

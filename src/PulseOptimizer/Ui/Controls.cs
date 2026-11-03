@@ -169,3 +169,9 @@ public class BoolToOpacity : IValueConverter
         (value is true) ^ (p as string == "invert") ? 1.0 : 0.55;
     public object ConvertBack(object value, Type t, object p, CultureInfo c) => throw new NotSupportedException();
 }
+
+public class InverseBool : IValueConverter
+{
+    public object Convert(object value, Type t, object p, CultureInfo c) => value is not true;
+    public object ConvertBack(object value, Type t, object p, CultureInfo c) => value is not true;
+}

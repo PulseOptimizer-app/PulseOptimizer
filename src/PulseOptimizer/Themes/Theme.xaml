@@ -57,6 +57,7 @@
     <!-- ═════════ Converters ═════════ -->
     <ui:BoolToVisibility x:Key="BoolToVis"/>
     <ui:BoolToVisibility x:Key="InverseBoolToVis" Invert="True"/>
+    <ui:InverseBool x:Key="InverseBool"/>
     <ui:HasValueToVisibility x:Key="HasValueToVis"/>
     <ui:HasValueToVisibility x:Key="NoValueToVis" Invert="True"/>
     <ui:BoolToOpacity x:Key="BoolToOpacity"/>
@@ -533,4 +534,42 @@
         <Setter Property="Background" Value="{StaticResource AccentGradient}"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
     </Style>
+
+    <!-- Round tick box for checklist steps -->
+    <Style x:Key="Tick" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Width="24" Height="24" Background="Transparent">
+                        <Ellipse x:Name="Ring" Stroke="#3A4562" StrokeThickness="2"/>
+                        <Ellipse x:Name="Fill" Fill="{StaticResource AccentGradient}" Opacity="0"/>
+                        <TextBlock x:Name="Mark" Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="12" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Ring" Property="Stroke" Value="{StaticResource AccentBrush}"/></Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Fill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.18"/>
+                                    <DoubleAnimation Storyboard.TargetName="Mark" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.18"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Fill" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                    <DoubleAnimation Storyboard.TargetName="Mark" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Cursor" Value="Arrow"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

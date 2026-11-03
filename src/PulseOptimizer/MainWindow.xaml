@@ -55,7 +55,7 @@
                         <RadioButton Style="{StaticResource NavButton}" Tag="tweaks" ui:Icon.Glyph="&#xE945;" Content="Tweaks" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="games" ui:Icon.Glyph="&#xE7FC;" Content="Games" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="measure" ui:Icon.Glyph="&#xE9D2;" Content="Measure" Checked="Nav_Checked"/>
-                        <RadioButton Style="{StaticResource NavButton}" Tag="cleanup" ui:Icon.Glyph="&#xE74D;" Content="Clean up" Checked="Nav_Checked"/>
+                        <RadioButton Style="{StaticResource NavButton}" Tag="cleanup" ui:Icon.Glyph="&#xE74D;" Content="Declutter" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="startup" ui:Icon.Glyph="&#xE7E8;" Content="Startup apps" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="security" ui:Icon.Glyph="&#xEA18;" Content="Security" Checked="Nav_Checked"/>
                         <RadioButton Style="{StaticResource NavButton}" Tag="safety" ui:Icon.Glyph="&#xE7A7;" Content="Undo &amp; restore" Checked="Nav_Checked"/>

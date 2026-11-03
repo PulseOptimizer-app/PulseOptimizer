@@ -103,7 +103,7 @@ public partial class MainWindow : Window
                 "tweaks" => new TweaksPage(),
                 "measure" => new MeasurePage(),
                 "games" => new GamesPage(),
-                "cleanup" => new CleanupPage(),
+                "cleanup" => new DeclutterPage(),
                 "startup" => new StartupPage(),
                 "security" => new SecurityPage(),
                 "safety" => new SafetyPage(),
