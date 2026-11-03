@@ -140,6 +140,7 @@ public partial class GamesPage : UserControl, IPage
 
         ShowLastCheck();
         UpdateBar();
+        ShowAuto();
         LibraryView.Visibility = Visibility.Collapsed;
         DetailView.Visibility = Visibility.Visible;
         DetailView.ScrollToTop();
@@ -174,6 +175,92 @@ public partial class GamesPage : UserControl, IPage
 
     void StepAction_Click(object sender, RoutedEventArgs e) =>
         MainWindow.Instance.RunAction((sender as FrameworkElement)?.Tag as string);
+
+    // ───────── Apply the pro settings for me ─────────
+
+    void ShowAuto()
+    {
+        var p = _current == null ? null : GameConfigs.For(_current.Game.Id);
+        if (p == null) { AutoCard.Visibility = Visibility.Collapsed; return; }
+        AutoCard.Visibility = Visibility.Visible;
+        bool undo = GameConfigs.CanUndo(p.GameId);
+        AutoUndoBtn.Visibility = undo ? Visibility.Visible : Visibility.Collapsed;
+        var path = p.FilePath;
+        if (path == null)
+        {
+            AutoTitle.Text = "Apply the pro settings for me";
+            AutoText.Text = $"Start {_current.Name} once and close it, so it creates its settings file. Then Pulse can set the pro video settings for you.";
+            AutoBtn.IsEnabled = false;
+            return;
+        }
+        AutoBtn.IsEnabled = true;
+        AutoTitle.Text = undo ? "Pro settings applied" : "Apply the pro settings for me";
+        AutoText.Text = undo
+            ? $"Pulse changed {TweakEngine.State.GameConfigBackups[p.GameId].Count} video settings in {_current.Name}. Undo puts your old settings back exactly."
+            : $"Pulse writes the video and performance settings from the step below straight into {_current.Name}. Your sensitivity, keybinds and crosshair are never touched.";
+        AutoBtnText.Text = undo ? "Check again" : "Apply";
+    }
+
+    async void Auto_Click(object sender, RoutedEventArgs e)
+    {
+        var g = _current;
+        var p = GameConfigs.For(g.Game.Id);
+        var path = p?.FilePath;
+        if (path == null) return;
+
+        if (LatencyPlan.RunningExes().Overlaps(g.Game.Exes))
+        {
+            await MainWindow.Instance.Alert($"Close {g.Name} first", $"{g.Name} saves its settings when it closes, which would overwrite Pulse's changes. Close it completely, then press Apply again.");
+            return;
+        }
+
+        string text;
+        try { text = await File.ReadAllTextAsync(path); }
+        catch (Exception ex) { await MainWindow.Instance.Alert("Couldn't read the settings file", ex.Message); return; }
+        var changes = p.Plan(text);
+        if (changes.Count == 0)
+        {
+            await MainWindow.Instance.Alert("Already set", $"{g.Name}'s settings already match the pro settings Pulse can apply." + (p.Note.Length > 0 ? "\n\n" + p.Note : ""));
+            return;
+        }
+
+        var lines = string.Join("\n", changes.Select(c => $"•  {c.Label}: {c.From} → {c.To}"));
+        var ok = await MainWindow.Instance.Confirm($"Change {g.Name}'s video settings?",
+            $"This changes {changes.Count} of {g.Name}'s video and performance settings:\n\n{lines}\n\n" +
+            "Your sensitivity, keybinds, crosshair, audio and field of view are NOT changed. " +
+            "Pulse saves a copy of your current settings first, and Undo puts them back exactly." +
+            (p.Note.Length > 0 ? "\n\n" + p.Note : ""), "Change settings");
+        if (!ok) return;
+
+        try
+        {
+            await Task.Run(() => GameConfigs.Apply(p, path, text, changes));
+            MainWindow.Instance.Toast($"Applied {changes.Count} pro settings to {g.Name}. Start the game to see them.");
+        }
+        catch (Exception ex)
+        {
+            await MainWindow.Instance.Alert("The settings weren't changed", ex.Message + "\n\nNothing was written.");
+        }
+        ShowAuto();
+    }
+
+    async void AutoUndo_Click(object sender, RoutedEventArgs e)
+    {
+        var g = _current;
+        if (LatencyPlan.RunningExes().Overlaps(g.Game.Exes))
+        {
+            await MainWindow.Instance.Alert($"Close {g.Name} first", "Close the game completely, then press Undo again.");
+            return;
+        }
+        if (!await MainWindow.Instance.Confirm($"Put {g.Name}'s settings back?", "Pulse restores the settings file exactly as it was before it applied the pro settings. Any video changes you made in the game since then are replaced too.", "Restore")) return;
+        try
+        {
+            await Task.Run(() => GameConfigs.Undo(g.Game.Id));
+            MainWindow.Instance.Toast($"{g.Name}'s original settings are back.");
+        }
+        catch (Exception ex) { await MainWindow.Instance.Alert("Couldn't restore", ex.Message); }
+        ShowAuto();
+    }
 
     // ───────── Delay check ─────────
 

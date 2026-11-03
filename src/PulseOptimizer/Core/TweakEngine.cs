@@ -44,6 +44,8 @@ public class AppState
     public bool WeeklyTuneUp { get; set; }
     /// <summary>Set by the weekly background run; shown once on the next launch.</summary>
     public string PendingReport { get; set; }
+    /// <summary>Game id → backup of its settings file from before Pulse applied the pro settings.</summary>
+    public Dictionary<string, Pulse.Core.Games.GameConfigBackup> GameConfigBackups { get; set; } = new();
 }
 
 /// <summary>Applies and undoes tweaks, keeping a backup of every value it changes on disk.</summary>
