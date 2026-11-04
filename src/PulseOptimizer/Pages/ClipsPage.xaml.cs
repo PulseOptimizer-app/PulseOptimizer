@@ -287,6 +287,7 @@ public partial class ClipsPage : UserControl, IPage
         StartupSwitch.IsChecked = S.StartWithWindows;
         SeparateMicSwitch.IsChecked = S.SeparateMicTrack;
         AppTracksSwitch.IsChecked = S.AppTracks;
+        InputSwitch.IsChecked = S.InputOverlay;
         AppTracksRow.Visibility = AudioCapture.AppCaptureSupported ? Visibility.Visible : Visibility.Collapsed;
         CursorSwitch.IsChecked = S.RecordCursor;
         SoundSwitch.IsChecked = S.PlaySound;
@@ -339,6 +340,7 @@ public partial class ClipsPage : UserControl, IPage
         S.KeepRunningInTray = TraySwitch.IsChecked == true;
         S.SeparateMicTrack = SeparateMicSwitch.IsChecked == true;
         S.AppTracks = AppTracksSwitch.IsChecked == true;
+        S.InputOverlay = InputSwitch.IsChecked == true;
         S.RecordCursor = CursorSwitch.IsChecked == true;
         S.PlaySound = SoundSwitch.IsChecked == true;
         S.ShowSavedPopup = PopupSwitch.IsChecked == true;
@@ -622,6 +624,7 @@ public partial class ClipsPage : UserControl, IPage
     void PlayerTick()
     {
         if (PlayerLayer.Visibility != Visibility.Visible) return;
+        if (_inputs != null && _inputMode != "off") InputView.Frame = _inputs.At(Timeline.Position);
         // Scrubbing: seek at most once per tick, to where the pointer is now, so the picture keeps up smoothly.
         if (_pendingSeek >= 0)
         {
@@ -768,7 +771,7 @@ public partial class ClipsPage : UserControl, IPage
             Child = stack,
         };
         var root = new Grid { Background = Brushes.Black };
-        root.Children.Add(Player);
+        root.Children.Add(VideoGrid);
         root.Children.Add(_fsOverlay);
 
         _fs = new Window
@@ -824,7 +827,7 @@ public partial class ClipsPage : UserControl, IPage
         _fsIdle.Stop();
         if (fs.Content is Grid root) root.Children.Clear();
         if (_fsOverlay?.Child is StackPanel stack) stack.Children.Clear();
-        VideoBox.Child = Player;
+        VideoBox.Child = VideoGrid;
         _cardGrid.Children.Add(Timeline);
         _cardGrid.Children.Add(PlayerControls);
         Player.UnloadedBehavior = MediaState.Close;
@@ -842,6 +845,8 @@ public partial class ClipsPage : UserControl, IPage
         Player.Stop();
         Player.Close();
         Player.Source = null;
+        _inputs = null;
+        InputBox.Visibility = Visibility.Collapsed;
         _playing = false;
         _scrubbing = false;
         PlayerLayer.Visibility = Visibility.Collapsed;
@@ -860,7 +865,8 @@ public partial class ClipsPage : UserControl, IPage
         steps[0].Start();
         try
         {
-            var path = await ClipLibrary.Trim(_open.Clip.Path, Timeline.Start, Timeline.End, enc, Math.Max(S.BitrateMbps, 20), ChosenTracks());
+            var burn = await PrepareInputBurn(_open.Clip.Path, Timeline.Start, Timeline.End);
+            var path = await ClipLibrary.Trim(_open.Clip.Path, Timeline.Start, Timeline.End, enc, Math.Max(S.BitrateMbps, 20), ChosenTracks(), burn);
             await ClipLibrary.MakeThumbnail(path);
             steps[0].Finish(Format.Bytes(new FileInfo(path).Length));
             await MainWindow.Instance.FinishSteps("Trimmed copy saved", Loc.F("Saved as {0}. The original is untouched.", Path.GetFileName(path)));
@@ -885,7 +891,8 @@ public partial class ClipsPage : UserControl, IPage
         try
         {
             bool whole = Timeline.Start <= 0.01 && Timeline.End >= Timeline.Duration - 0.05;
-            var path = await ClipLibrary.ForDiscord(_open.Clip.Path, enc, whole ? 0 : Timeline.Start, whole ? 0 : Timeline.End, ChosenTracks());
+            var burn = await PrepareInputBurn(_open.Clip.Path, whole ? 0 : Timeline.Start, whole ? Timeline.Duration : Timeline.End);
+            var path = await ClipLibrary.ForDiscord(_open.Clip.Path, enc, whole ? 0 : Timeline.Start, whole ? 0 : Timeline.End, ChosenTracks(), burn);
             await ClipLibrary.MakeThumbnail(path);
             steps[0].Finish(Format.Bytes(new FileInfo(path).Length));
             // Put the file on the clipboard so it can be pasted straight into Discord.

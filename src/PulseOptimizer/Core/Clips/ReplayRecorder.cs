@@ -15,6 +15,10 @@ public sealed class ReplayRecorder : IDisposable
     readonly Encoder _encoder;
     readonly TsRing _ring = new();
     readonly Stopwatch _clock = Stopwatch.StartNew();
+    /// <summary>When the recorder's clock started, on <see cref="InputCapture.NowSeconds"/>'s clock.</summary>
+    readonly double _startAbs = InputCapture.NowSeconds;
+    /// <summary>The span of the last saved clip or recording, on <see cref="InputCapture.NowSeconds"/>'s clock.</summary>
+    public (double From, double To) LastRange { get; private set; }
     readonly CancellationTokenSource _stop = new();
     readonly List<Task> _tasks = new();
     Process _ffmpeg;
