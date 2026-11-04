@@ -79,3 +79,19 @@ public class StretchTests
         Assert.Equal("", Pulse.Core.Clips.ClipLibrary.StretchCopyArgs("h264", null));
     }
 }
+
+public class ClipSoundTests
+{
+    [Fact]
+    public void Clip_sound_is_a_short_clean_stereo_wav()
+    {
+        var wav = Pulse.Ui.Feedback.Blip();
+        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(wav, 0, 4));
+        Assert.Equal(2, BitConverter.ToInt16(wav, 22));          // stereo
+        Assert.Equal(48000, BitConverter.ToInt32(wav, 24));      // 48 kHz
+        double seconds = BitConverter.ToInt32(wav, 40) / 4.0 / 48000;
+        Assert.InRange(seconds, 0.5, 0.8);
+        short last = BitConverter.ToInt16(wav, wav.Length - 2);
+        Assert.InRange(Math.Abs((int)last), 0, 50);             // fades out: no click at the end
+    }
+}
