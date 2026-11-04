@@ -67,8 +67,21 @@ public static class Reg
     /// Saves a whole key to a .reg file (Windows' own export) and then deletes it. The file puts it back when opened.
     /// Returns the backup file. Throws if the backup couldn't be made (then nothing is deleted).
     /// </summary>
+    /// <summary>True only for one entry directly inside Windows' Uninstall list (no deeper keys, no "..").</summary>
+    internal static bool IsUninstallEntry(string path)
+    {
+        foreach (var root in new[] { @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\", @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\" })
+            if (path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            {
+                var name = path[root.Length..];
+                return name.Length > 0 && !name.Contains('\\') && !name.Contains("..");
+            }
+        return false;
+    }
+
     public static string ExportAndDeleteKey(RegistryHive h, string path, string backupDir, string name)
     {
+        if (!IsUninstallEntry(path)) throw new InvalidOperationException("Only a program's entry in Windows' list of programs can be removed.");
         var root = h switch { RegistryHive.LocalMachine => "HKLM", RegistryHive.CurrentUser => "HKCU", RegistryHive.Users => "HKU", _ => throw new ArgumentException("Unsupported hive") };
         foreach (var c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
         Directory.CreateDirectory(backupDir);
