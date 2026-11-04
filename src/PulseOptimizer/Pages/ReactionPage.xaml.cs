@@ -321,8 +321,8 @@ public partial class ReactionPage : UserControl, IPage
         }
         fig.Segments.Add(new LineSegment(new Point(w, bottom), true));
         var area = new LinearGradientBrush(Color.FromArgb(0x66, 0x22, 0xD3, 0xEE), Color.FromArgb(0x10, 0xA7, 0x8B, 0xFA), 90);
-        PopChart.Children.Add(new Path { Data = new PathGeometry(new[] { fig }), Fill = area });
-        PopChart.Children.Add(new Path { Data = new PathGeometry(new[] { line }), Stroke = (Brush)FindResource("AccentGradient"), StrokeThickness = 2 });
+        PopChart.Children.Add(new System.Windows.Shapes.Path { Data = new PathGeometry(new[] { fig }), Fill = area });
+        PopChart.Children.Add(new System.Windows.Shapes.Path { Data = new PathGeometry(new[] { line }), Stroke = (Brush)FindResource("AccentGradient"), StrokeThickness = 2 });
 
         // Scale.
         foreach (var ms in new[] { 150, 200, 250, 300, 350, 400, 450, 500 })
