@@ -186,7 +186,7 @@ public class ClipsTests
         var a = ReplayRecorder.Arguments(new ClipSettings { Fps = 120 }, Nvenc, null, null, (IntPtr)0x1234);
         Assert.Contains("gfxcapture=hwnd=4660", a);
         Assert.Contains("display_border=0", a);
-        Assert.Contains("[0:v]fps=120,null[v]", a);
+        Assert.Contains("[0:v]fps=120,scale_d3d11=format=nv12[v]", a);
         Assert.DoesNotContain("ddagrab", a);
         Assert.Contains("ddagrab", ReplayRecorder.Arguments(new ClipSettings(), Nvenc, null, null));
     }
@@ -261,7 +261,7 @@ public class ClipsTests
     {
         var a = ReplayRecorder.Arguments(new ClipSettings(), Nvenc, @"\\.\pipe\g", null);
         Assert.Contains("ddagrab=output_idx=0:framerate=60", a);
-        Assert.Contains("[0:v]null[v]", a);
+        Assert.Contains("[0:v]scale_d3d11=format=nv12[v]", a); // stays on the graphics card
         Assert.DoesNotContain("hwdownload", a);
         Assert.Contains("-c:v h264_nvenc", a);
         Assert.Contains("-map 1:a", a);
@@ -273,7 +273,7 @@ public class ClipsTests
     {
         var s = new ClipSettings { Resolution = "720", Microphone = true };
         var a = ReplayRecorder.Arguments(s, Nvenc, "G", "M");
-        Assert.Contains("scale=-2:720", a);
+        Assert.Contains("scale_d3d11=width=-2:height=720:format=nv12", a);
         Assert.Contains("[1:a][2:a]amix=inputs=2", a);
         Assert.Contains("-map [mix]", a);
         Assert.DoesNotContain("asplit", a);
