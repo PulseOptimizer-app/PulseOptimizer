@@ -909,6 +909,80 @@ public partial class ClipsPage : UserControl, IPage
         }
     }
 
+    // ───────── Input overlay ─────────
+
+    InputTimeline _inputs;
+    string _inputMode = "off"; // "off", "kbm", "xbox", "ps"
+
+    void LoadInputs(string clip)
+    {
+        _inputs = InputTimeline.Load(clip);
+        InputPanel.Visibility = _inputs?.HasInput == true ? Visibility.Visible : Visibility.Collapsed;
+        InputChips.Children.Clear();
+        if (_inputs?.HasInput != true) { _inputMode = "off"; InputBox.Visibility = Visibility.Collapsed; return; }
+        _inputMode = _inputs.MostUsed();
+        var pad = _inputs.PadKind == "ps" ? ("PlayStation", "ps") : ("Xbox", "xbox");
+        foreach (var (label, value) in new[] { ("Off", "off"), ("Keyboard and mouse", "kbm"), pad })
+        {
+            var rb = new RadioButton { Style = (Style)FindResource("Chip"), Content = Loc.T(label), GroupName = "clips-input", Tag = value, Margin = new Thickness(0, 0, 6, 0), IsChecked = value == _inputMode };
+            rb.Checked += (s, _) => { _inputMode = (string)((FrameworkElement)s).Tag; ShowInputMode(); };
+            InputChips.Children.Add(rb);
+        }
+        ShowInputMode();
+    }
+
+    void ShowInputMode()
+    {
+        InputBox.Visibility = _inputMode == "off" ? Visibility.Collapsed : Visibility.Visible;
+        if (_inputMode != "off") { InputView.Kind = _inputMode; InputView.Frame = _inputs?.At(Timeline.Position); }
+        VideoGrid_SizeChanged(null, null);
+    }
+
+    void VideoGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // About a quarter of the picture's height, like the burned-in copy.
+        InputBox.Height = Math.Max(60, VideoGrid.ActualHeight * 0.26);
+    }
+
+    /// <summary>
+    /// Pictures of the overlay for each change between <paramref name="from"/> and <paramref name="to"/>, and an
+    /// FFmpeg concat list that shows each for as long as it was held. Null when the overlay is off.
+    /// </summary>
+    async Task<InputBurn> PrepareInputBurn(string clip, double from, double to)
+    {
+        if (_inputs == null || _inputMode == "off") return null;
+        var (_, height) = await ClipLibrary.VideoSize(clip);
+        if (height <= 0) height = 1080;
+        var part = _inputs.Slice(from, to);
+        if (part.Frames.Count == 0) return null;
+        // Changes closer than 1/30 s apart are merged (the picture can't show them anyway).
+        var frames = new List<InputFrame>();
+        foreach (var f in part.Frames)
+        {
+            if (frames.Count > 0 && f.T - frames[^1].T < 1 / 30.0) { var c = f.Copy(); c.T = frames[^1].T; frames[^1] = c; }
+            else frames.Add(f);
+        }
+        double scale = height * 0.26 / InputOverlayView.BaseSize(_inputMode).Height;
+        var dir = Path.Combine(Path.GetTempPath(), "pulse-input-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var list = new System.Text.StringBuilder("ffconcat version 1.0\n");
+        double length = to - from;
+        for (int i = 0; i < frames.Count; i++)
+        {
+            var png = Path.Combine(dir, $"{i:D5}.png");
+            var bmp = InputOverlayView.Render(frames[i], _inputMode, scale);
+            using (var fs = File.Create(png)) { var enc = new PngBitmapEncoder(); enc.Frames.Add(BitmapFrame.Create(bmp)); enc.Save(fs); }
+            double next = i + 1 < frames.Count ? frames[i + 1].T : length;
+            list.Append($"file '{png.Replace("\\", "/")}'\nduration {Math.Max(0.001, next - frames[i].T).ToString("0.###", CultureInfo.InvariantCulture)}\n");
+            if (i % 50 == 49) await Task.Yield(); // keep the window responsive
+        }
+        // The concat format needs the last picture listed once more.
+        list.Append($"file '{Path.Combine(dir, $"{frames.Count - 1:D5}.png").Replace("\\", "/")}'\n");
+        var listFile = Path.Combine(dir, "list.txt");
+        File.WriteAllText(listFile, list.ToString());
+        return new InputBurn(dir, listFile);
+    }
+
     // ───────── Long recording ─────────
 
     async void SessionNow_Click(object sender, RoutedEventArgs e)
