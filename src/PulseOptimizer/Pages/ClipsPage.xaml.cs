@@ -24,13 +24,14 @@ public class ClipVm : Observable
 
     bool _selecting, _selected;
     /// <summary>The library is in "select" mode (cards show a check circle).</summary>
-    public bool Selecting { get => _selecting; set { if (Set(ref _selecting, value)) Raise(nameof(SelectVisibility)); } }
+    public bool Selecting { get => _selecting; set { if (Set(ref _selecting, value)) { Raise(nameof(SelectVisibility)); Raise(nameof(DeleteVisibility)); } } }
     public bool Selected
     {
         get => _selected;
         set { if (Set(ref _selected, value)) { Raise(nameof(CheckVisibility)); Raise(nameof(CheckBrush)); } }
     }
     public Visibility SelectVisibility => _selecting ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility DeleteVisibility => _selecting ? Visibility.Collapsed : Visibility.Visible;
     public Visibility CheckVisibility => _selected ? Visibility.Visible : Visibility.Collapsed;
     public Brush CheckBrush => _selected ? new SolidColorBrush(Color.FromRgb(0x22, 0xD3, 0xEE)) : new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0));
 }
@@ -290,8 +291,14 @@ public partial class ClipsPage : UserControl, IPage
         Mark(CodecChips, S.Codec);
         var preset = Presets.FirstOrDefault(p => (p.Res == 0 ? "native" : p.Res.ToString(CultureInfo.InvariantCulture)) == S.Resolution && p.Fps == S.Fps && p.Mbps == S.BitrateMbps);
         Mark(QualityChips, preset.Label ?? "");
-        QualityText.Text = Loc.F("{0} · {1} FPS · {2} Mbps · about {3} of memory per minute",
-            S.Resolution == "native" ? Loc.T("Native resolution") : S.Resolution + "p", S.Fps, S.BitrateMbps, Format.Bytes(S.BitrateMbps * 1_000_000.0 / 8 * 60));
+        // Memory: the replay is kept in RAM, so say what the chosen length actually uses, and warn on small-memory PCs.
+        double replayBytes = S.BitrateMbps * 1_000_000.0 / 8 * (S.ReplaySeconds + 2);
+        double ramGb = SystemInfo.TotalRam / 1073741824.0;
+        QualityText.Text = Loc.F("{0} · {1} FPS · {2} Mbps", S.Resolution == "native" ? Loc.T("Native resolution") : S.Resolution + "p", S.Fps, S.BitrateMbps) + "\n" +
+            Loc.F("Uses about {0} of memory for your {1} replay. It doesn't cost FPS unless your PC runs low on memory.", Format.Bytes(replayBytes), LengthText(S.ReplaySeconds));
+        bool heavy = ramGb > 0 && replayBytes > ramGb * 1073741824.0 * (ramGb <= 8.5 ? 0.08 : 0.15);
+        QualityText.Foreground = (Brush)FindResource(heavy ? "WarnBrush" : "TextDimBrush");
+        if (heavy) QualityText.Text += "\n" + Loc.F("That's a lot for a PC with {0} GB. A shorter replay or Light quality keeps games from running short on memory.", Math.Round(ramGb));
         GameAudioSwitch.IsChecked = S.GameAudio;
         MicSwitch.IsChecked = S.Microphone;
         OnlyGamingSwitch.IsChecked = S.OnlyWhileGaming;
@@ -1134,6 +1141,23 @@ public partial class ClipsPage : UserControl, IPage
         Select_Click(SelectToggle, e);
         LoadLibrary();
         if (failed > 0) await MainWindow.Instance.Alert("Some clips weren't deleted", Loc.F("{0} are open in another app.", failed));
+    }
+
+    /// <summary>The trash button on a clip card: one confirm, then gone (no need to open the clip).</summary>
+    async void CardDelete_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if ((sender as FrameworkElement)?.Tag is not ClipVm vm) return;
+        if (!await MainWindow.Instance.Confirm("Delete this clip?", Loc.F("{0} ({1})", vm.Clip.Name, Format.Bytes(vm.Clip.Size)), "Delete")) return;
+        try
+        {
+            ClipLibrary.Delete(vm.Clip.Path);
+            S.Favorites.RemoveAll(f => f.Equals(Path.GetFileName(vm.Clip.Path), StringComparison.OrdinalIgnoreCase));
+            TweakEngine.Save();
+            TweakEngine.AddLog("clips", $"Deleted {Path.GetFileName(vm.Clip.Path)}");
+        }
+        catch (Exception ex) { await MainWindow.Instance.Alert("Couldn't delete the clip", ex.Message); }
+        LoadLibrary();
     }
 
     // ───────── Rename ─────────
