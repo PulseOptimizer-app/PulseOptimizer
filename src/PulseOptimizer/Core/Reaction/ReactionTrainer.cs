@@ -141,6 +141,18 @@ public sealed class ReactionTrainer
         Level = Level,
     };
 
+    /// <summary>
+    /// About how much of a measured time is the PC, not you: the screen (on average half a refresh until the next one,
+    /// plus one refresh for Windows to compose it), the mouse (half its polling interval) and Windows' input handling.
+    /// </summary>
+    public static (double Screen, double Mouse, double Windows, double Total) SystemDelay(int refreshHz, int mouseHz = 1000)
+    {
+        double screen = 1000.0 / Math.Max(refreshHz, 30) * 1.5;
+        double mouse = 1000.0 / Math.Max(mouseHz, 125) / 2;
+        const double windows = 2;
+        return (screen, mouse, windows, screen + mouse + windows);
+    }
+
     public static double Median(IReadOnlyCollection<double> xs) => Quantile(xs, 0.5);
 
     public static double Quantile(IReadOnlyCollection<double> xs, double q)

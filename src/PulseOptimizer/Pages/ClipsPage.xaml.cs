@@ -146,7 +146,10 @@ public partial class ClipsPage : UserControl, IPage
     {
         bool on = S.Enabled && Ffmpeg.Installed;
         PitchCard.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        StatusCard.Visibility = SettingsCard.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        StatusCard.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        // Your clips come first; settings open from the Settings button.
+        SettingsCard.Visibility = on && _settingsOpen ? Visibility.Visible : Visibility.Collapsed;
+        LibraryPanel.Visibility = on && _settingsOpen ? Visibility.Collapsed : Visibility.Visible;
         if (!on) return;
 
         var hk = ClipsService.HotkeyText(S.HotkeyModifiers, S.HotkeyKey);
@@ -180,7 +183,13 @@ public partial class ClipsPage : UserControl, IPage
         SaveNowBtn.IsEnabled = ClipsService.State == ClipsState.Recording;
         HotkeyWarn.Text = ClipsService.HotkeyWorks ? "" : Loc.T("Another app already uses this hotkey (often NVIDIA's overlay or Medal). Pick a different one.");
         if (ClipsService.VoiceError != null) VoiceText.Text = Loc.T(ClipsService.VoiceError);
-        ExtraWarn.Text = ClipsService.QuickOk && ClipsService.ShotOk && ClipsService.SessionOk && ClipsService.MarkOk ? "" : Loc.T("Another app already uses one of these hotkeys. Pick a different one.");
+        // Name the exact hotkey another app already has, so it's clear which one to change.
+        var taken = new List<string>();
+        if (!ClipsService.QuickOk) taken.Add(ClipsService.HotkeyText(S.QuickModifiers, S.QuickKey));
+        if (!ClipsService.ShotOk) taken.Add(ClipsService.HotkeyText(S.ScreenshotModifiers, S.ScreenshotKey));
+        if (!ClipsService.SessionOk) taken.Add(ClipsService.HotkeyText(S.SessionModifiers, S.SessionKey));
+        if (!ClipsService.MarkOk) taken.Add(ClipsService.HotkeyText(S.BookmarkModifiers, S.BookmarkKey));
+        ExtraWarn.Text = taken.Count == 0 ? "" : Loc.F("Another app already uses {0}. Click it and pick a different key.", string.Join(", ", taken));
         UpdateUsage();
     }
 
@@ -577,7 +586,7 @@ public partial class ClipsPage : UserControl, IPage
         Timeline.Markers = ClipLibrary.LoadMarks(vm.Clip.Path);
         LoadInputs(vm.Clip.Path);
         PlayerTitle.Text = vm.Clip.Name;
-        FavBtn.Content = Loc.T(vm.Clip.Favorite ? "Unfavorite" : "Favorite");
+        ShowFavorite(vm.Clip.Favorite);
         Timeline.Strip = null;
         Timeline.Position = 0;
         PlayerLayer.Visibility = Visibility.Visible;
@@ -724,6 +733,7 @@ public partial class ClipsPage : UserControl, IPage
             t.Click += Track_Click;
             TrackToggles.Children.Add(t);
         }
+        UpdateMute();
     }
 
     /// <summary>Which tracks the exported copy keeps: all of them (track 1, the full mix), some parts mixed, or none.</summary>
@@ -734,7 +744,31 @@ public partial class ClipsPage : UserControl, IPage
     }
 
 
-    void Track_Click(object sender, RoutedEventArgs e) { /* read when exporting */ }
+    void ShowFavorite(bool on)
+    {
+        FavBtnGlyph.Text = on ? "\uE735" : "\uE734"; // filled or outlined star
+        FavBtnGlyph.Foreground = on ? new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24)) : (Brush)FindResource("TextBrush");
+        FavBtn.ToolTip = Loc.T(on ? "Unfavorite" : "Favorite (kept when the storage limit is reached)");
+    }
+
+    /// <summary>Turning sounds off also mutes what you hear now (the player can only mute everything at once).</summary>
+    void Track_Click(object sender, RoutedEventArgs e) => UpdateMute();
+
+    void UpdateMute()
+    {
+        bool silent = ClipLibrary.ChooseTracks(_trackNames.Count, TrackToggles.Children.OfType<System.Windows.Controls.Primitives.ToggleButton>().Select(t => t.IsChecked == true).ToList()).Count == 0;
+        Player.IsMuted = silent;
+        MuteGlyph.Text = silent ? "\uE74F" : "\uE767";
+    }
+
+    void Mute_Click(object sender, RoutedEventArgs e)
+    {
+        var toggles = TrackToggles.Children.OfType<System.Windows.Controls.Primitives.ToggleButton>().ToList();
+        bool anyOn = toggles.Any(t => t.IsChecked == true);
+        foreach (var t in toggles) t.IsChecked = !anyOn;
+        if (toggles.Count == 0) Player.IsMuted = !Player.IsMuted;
+        UpdateMute();
+    }
 
     void PlayerClose_Click(object sender, RoutedEventArgs e) => ClosePlayer();
 
@@ -998,6 +1032,15 @@ public partial class ClipsPage : UserControl, IPage
         Changed(restart: true);
     }
 
+    bool _settingsOpen;
+
+    void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        _settingsOpen = !_settingsOpen;
+        UpdateStatus();
+        if (_settingsOpen) SettingsCard.BringIntoView();
+    }
+
     // ───────── Long recording ─────────
 
     async void SessionNow_Click(object sender, RoutedEventArgs e)
@@ -1145,7 +1188,7 @@ public partial class ClipsPage : UserControl, IPage
         if (_open.Clip.Favorite) S.Favorites.RemoveAll(f => f.Equals(name, StringComparison.OrdinalIgnoreCase));
         else S.Favorites.Add(name);
         _open.Clip.Favorite = !_open.Clip.Favorite;
-        FavBtn.Content = Loc.T(_open.Clip.Favorite ? "Unfavorite" : "Favorite");
+        ShowFavorite(_open.Clip.Favorite);
         TweakEngine.Save();
         LoadLibrary();
     }

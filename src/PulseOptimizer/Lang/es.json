@@ -1945,5 +1945,16 @@
  "Your file: goes to the Recycle Bin": "Tu archivo: va a la Papelera",
  "Program: opens its uninstaller": "Programa: abre su desinstalador",
  "Empties the Recycle Bin": "Vacía la Papelera",
- "{0} tries, about 20 seconds.": "{0} intentos, unos 20 segundos."
+ "{0} tries, about 20 seconds.": "{0} intentos, unos 20 segundos.",
+ "Sound on or off": "Sonido sí o no",
+ "Turn a sound off to leave it out of what you hear and of saved and Discord copies": "Apaga un sonido para quitarlo de lo que oyes y de las copias guardadas y para Discord",
+ "Favorite (kept when the storage limit is reached)": "Favorito (se conserva al llegar al límite de espacio)",
+ "Space play · ← → one frame · Shift ← → one second · I / O set start and end · F full screen · Del delete": "Espacio reproducir · ← → un frame · Shift ← → un segundo · I / O inicio y fin · F pantalla completa · Supr eliminar",
+ "Back to your clips": "Volver a tus clips",
+ "Another app already uses {0}. Click it and pick a different key.": "Otra app ya usa {0}. Haz clic en él y elige otra tecla.",
+ "You": "Tú",
+ "Measured {0} ms: about {1} ms was you, and about {2} ms was your PC, mouse and screen.": "Medido {0} ms: unos {1} ms fuiste tú y unos {2} ms fueron tu PC, ratón y pantalla.",
+ "Screen {0} ms ({1} Hz) · mouse {2} ms · Windows {3} ms": "Pantalla {0} ms ({1} Hz) · ratón {2} ms · Windows {3} ms",
+ "A 144 Hz screen would cut the screen part by more than half.": "Una pantalla de 144 Hz reduciría la parte de la pantalla a menos de la mitad.",
+ "The delay from your PC, mouse and screen is an estimate from your screen's refresh rate, assuming a 1000 Hz gaming mouse. Your progress graph uses the full measured time, so compare sessions on the same setup. Simple reaction time only improves a little with practice; reacting and choosing in games improves a lot, so mix the drills.": "El retraso de tu PC, ratón y pantalla es una estimación según la frecuencia de tu pantalla, suponiendo un ratón gaming de 1000 Hz. Tu gráfica de progreso usa el tiempo medido completo, así que compara sesiones con el mismo equipo. El tiempo de reacción simple mejora poco con la práctica; reaccionar y elegir en juegos mejora mucho, así que combina los ejercicios."
 }

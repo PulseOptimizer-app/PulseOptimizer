@@ -45,6 +45,7 @@ public partial class ReactionPage : UserControl, IPage
         InitializeComponent();
         _timer.Tick += Timer_Tick;
         PreviewKeyDown += Page_KeyDown;
+        _ = Task.Run(() => { var hz = ScreenHz(); Dispatcher.Invoke(() => _hz = hz); });
         Unloaded += (_, _) => { _timer.Stop(); Reset(); };
         foreach (var (mode, label, _) in Modes)
         {
@@ -235,15 +236,38 @@ public partial class ReactionPage : UserControl, IPage
         ProgressText.Text = "";
 
         ResultCard.Visibility = Visibility.Visible;
-        MedianText.Text = s.Trials > 0 ? Loc.F("{0} ms", Math.Round(s.MedianMs)) : "–";
-        BestText.Text = s.Trials > 0 ? Loc.F("{0} ms", Math.Round(s.BestMs)) : "–";
+        // Split the measured time into you and the PC (screen, mouse, Windows).
+        int hz = _hz;
+        var d = ReactionTrainer.SystemDelay(hz);
+        double you = Math.Max(0, s.MedianMs - d.Total);
+        MedianText.Text = s.Trials > 0 ? Loc.F("{0} ms", Math.Round(you)) : "–";
+        BestText.Text = s.Trials > 0 ? Loc.F("{0} ms", Math.Round(Math.Max(0, s.BestMs - d.Total))) : "–";
+        YouCol.Width = new GridLength(Math.Max(you, 1), GridUnitType.Star);
+        PcCol.Width = new GridLength(Math.Max(d.Total, 1), GridUnitType.Star);
+        SplitText.Text = s.Trials > 0
+            ? Loc.F("Measured {0} ms: about {1} ms was you, and about {2} ms was your PC, mouse and screen.", Math.Round(s.MedianMs), Math.Round(you), Math.Round(d.Total))
+            : "";
+        SplitDetail.Text = Loc.F("Screen {0} ms ({1} Hz) · mouse {2} ms · Windows {3} ms", Math.Round(d.Screen, 1), hz, Math.Round(d.Mouse, 1), Math.Round(d.Windows)) +
+            (hz < 120 ? " · " + Loc.T("A 144 Hz screen would cut the screen part by more than half.") : "");
         SpreadText.Text = s.Trials > 1 ? Loc.F("±{0} ms", Math.Round(s.SpreadMs / 2)) : "–";
         MistakeText.Text = s.Mistakes.ToString(CultureInfo.CurrentCulture);
         LevelBox.Visibility = _mode is ReactionMode.GoNoGo or ReactionMode.Flick ? Visibility.Visible : Visibility.Collapsed;
         LevelText.Text = s.Level.ToString(CultureInfo.CurrentCulture);
         CompareText.Text = s.Trials > 0 ? Loc.T(ReactionTrainer.Compare(s, S.History)) : Loc.T("No tries counted. Wait for the signal before clicking.");
-        _ = CountUp(s.MedianMs);
+        _ = CountUp(you);
         ShowHistory();
+    }
+
+    int _hz = 60; // read once in the background (reading monitors can take a second)
+
+    static int ScreenHz()
+    {
+        try
+        {
+            var m = Displays.Enumerate().FirstOrDefault(x => x.IsPrimary) ?? Displays.Enumerate().FirstOrDefault();
+            return m?.Current.Hz > 1 ? m.Current.Hz : 60;
+        }
+        catch { return 60; }
     }
 
     async Task CountUp(double target)

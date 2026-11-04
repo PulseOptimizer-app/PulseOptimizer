@@ -1945,5 +1945,16 @@
  "Your file: goes to the Recycle Bin": "Seu arquivo: vai para a Lixeira",
  "Program: opens its uninstaller": "Programa: abre o desinstalador",
  "Empties the Recycle Bin": "Esvazia a Lixeira",
- "{0} tries, about 20 seconds.": "{0} tentativas, uns 20 segundos."
+ "{0} tries, about 20 seconds.": "{0} tentativas, uns 20 segundos.",
+ "Sound on or off": "Som ligado ou desligado",
+ "Turn a sound off to leave it out of what you hear and of saved and Discord copies": "Desligue um som para tirar ele do que você ouve e das cópias salvas e para o Discord",
+ "Favorite (kept when the storage limit is reached)": "Favorito (fica guardado quando o limite de espaço é atingido)",
+ "Space play · ← → one frame · Shift ← → one second · I / O set start and end · F full screen · Del delete": "Espaço reproduzir · ← → um frame · Shift ← → um segundo · I / O início e fim · F tela cheia · Del excluir",
+ "Back to your clips": "Voltar para seus clipes",
+ "Another app already uses {0}. Click it and pick a different key.": "Outro app já usa {0}. Clique nele e escolha outra tecla.",
+ "You": "Você",
+ "Measured {0} ms: about {1} ms was you, and about {2} ms was your PC, mouse and screen.": "Medido {0} ms: cerca de {1} ms foi você e cerca de {2} ms foram seu PC, mouse e tela.",
+ "Screen {0} ms ({1} Hz) · mouse {2} ms · Windows {3} ms": "Tela {0} ms ({1} Hz) · mouse {2} ms · Windows {3} ms",
+ "A 144 Hz screen would cut the screen part by more than half.": "Uma tela de 144 Hz cortaria a parte da tela para menos da metade.",
+ "The delay from your PC, mouse and screen is an estimate from your screen's refresh rate, assuming a 1000 Hz gaming mouse. Your progress graph uses the full measured time, so compare sessions on the same setup. Simple reaction time only improves a little with practice; reacting and choosing in games improves a lot, so mix the drills.": "O atraso do seu PC, mouse e tela é uma estimativa pela taxa de atualização da tela, supondo um mouse gamer de 1000 Hz. Seu gráfico de progresso usa o tempo medido completo, então compare sessões no mesmo setup. O tempo de reação simples melhora pouco com treino; reagir e escolher nos jogos melhora muito, então misture os exercícios."
 }
