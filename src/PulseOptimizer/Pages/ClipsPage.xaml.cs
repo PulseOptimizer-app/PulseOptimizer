@@ -568,6 +568,7 @@ public partial class ClipsPage : UserControl, IPage
         if (SelectToggle.IsChecked == true) { vm.Selected = !vm.Selected; UpdateSelection(); return; }
         _open = vm;
         Timeline.Markers = ClipLibrary.LoadMarks(vm.Clip.Path);
+        LoadInputs(vm.Clip.Path);
         PlayerTitle.Text = vm.Clip.Name;
         FavBtn.Content = Loc.T(vm.Clip.Favorite ? "Unfavorite" : "Favorite");
         Timeline.Strip = null;

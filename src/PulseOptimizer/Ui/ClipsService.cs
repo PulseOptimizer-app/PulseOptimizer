@@ -291,6 +291,7 @@ public static class ClipsService
             try
             {
                 _rec.StartSession(S.ClipsFolder, _game ?? "Recording");
+                SyncInput();
                 ClipToast.Show(Loc.T("Recording started"), Loc.F("Press {0} again to stop.", HotkeyText(S.SessionModifiers, S.SessionKey)), true);
                 TweakEngine.AddLog("clips", "Started a long recording");
                 Changed?.Invoke();
@@ -302,6 +303,8 @@ public static class ClipsService
         try
         {
             var path = await _rec.StopSession(S.ClipsFolder);
+            SaveInputs(path);
+            SyncInput();
             Feedback.Saved(S, 0, Loc.T("Recording saved"));
             TweakEngine.AddLog("clips", $"Saved a recording: {Path.GetFileName(path)}");
             _ = Task.Run(async () =>

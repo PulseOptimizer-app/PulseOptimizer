@@ -113,6 +113,7 @@ public static class ClipLibrary
         try { if (File.Exists(ThumbFor(clip))) File.Move(ThumbFor(clip), ThumbFor(dest), true); } catch { }
         try { if (File.Exists(MarksFor(clip))) File.Move(MarksFor(clip), MarksFor(dest), true); } catch { }
         try { if (File.Exists(StripFor(clip))) File.Move(StripFor(clip), StripFor(dest), true); } catch { }
+        try { if (File.Exists(InputTimeline.FileFor(clip))) File.Move(InputTimeline.FileFor(clip), InputTimeline.FileFor(dest), true); } catch { }
         return dest;
     }
 
@@ -207,6 +208,7 @@ public static class ClipLibrary
         try { File.Delete(ThumbFor(clip)); } catch { }
         try { File.Delete(StripFor(clip)); } catch { }
         try { File.Delete(MarksFor(clip)); } catch { }
+        try { File.Delete(InputTimeline.FileFor(clip)); } catch { }
     }
 
     /// <summary>

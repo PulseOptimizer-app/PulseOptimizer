@@ -266,6 +266,7 @@ public sealed class ReplayRecorder : IDisposable
             var (code, err) = await Ffmpeg.Run($"-hide_banner -loglevel error -y -i \"{ts}\" -map 0 -c copy -t {len}{TitleArgs(TrackTitles)} -movflags +faststart \"{mp4}\"", ct, 120_000);
             if (code != 0 || !File.Exists(mp4)) throw new InvalidOperationException("FFmpeg couldn't save the clip: " + err.Trim());
             ClipLibrary.SaveMarks(mp4, MarksBetween(clipStart, Now));
+            LastRange = (_startAbs + clipStart, _startAbs + Now);
             return mp4;
         }
         finally { try { File.Delete(ts); } catch { } }
@@ -335,6 +336,7 @@ public sealed class ReplayRecorder : IDisposable
         _session = null;
         var tapped = _ring.StopTap();
         var marks = MarksBetween(_sessionStart, Now);
+        LastRange = (_startAbs + _sessionStart, _startAbs + Now);
         try { await f.FlushAsync(); } catch { }
         f.Dispose();
         try
