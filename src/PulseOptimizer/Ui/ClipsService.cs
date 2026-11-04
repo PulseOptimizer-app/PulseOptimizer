@@ -39,6 +39,15 @@ public static class ClipsService
     public static bool ShotOk { get; private set; } = true;
     public static long BufferBytes => _rec?.BufferBytes ?? 0;
     public static long MemoryBytes => _rec?.MemoryBytes ?? 0;
+    /// <summary>Everything clipping costs in memory right now: Pulse itself plus its recorder, as Task Manager counts it.</summary>
+    public static long TotalMemory
+    {
+        get
+        {
+            using var me = Process.GetCurrentProcess();
+            return Native.TaskManagerMemory(me) + (_rec?.RecorderMemory ?? 0);
+        }
+    }
     public static bool OnDisk => _rec?.OnDisk == true;
     // How far Pulse stepped down the video path after one gave no picture (see ReplayRecorder.VideoLevel).
     static int _videoLevel;
