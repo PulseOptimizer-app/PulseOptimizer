@@ -53,13 +53,14 @@ public enum TrialResult { Hit, TooEarly, WrongSide, ClickedNoGo, Missed, Correct
 
 /// <summary>
 /// Runs a session: picks random waits, adapts difficulty, and scores. Kept free of any UI so it can be tested.
-/// Design follows what reaction research supports: random waits (no rhythm to anticipate), warm-up tries that
-/// don't count, the median instead of the average, and honest feedback about normal day-to-day variation.
+/// Design follows what reaction research supports: random waits (no rhythm to anticipate), short sessions,
+/// the median instead of the average, and honest feedback about normal day-to-day variation.
 /// </summary>
 public sealed class ReactionTrainer
 {
-    public const int WarmUp = 3;
-    public const int TrialsPerSession = 20;
+    // Short on purpose: 8 tries give a steady median in about 20 seconds, and people actually finish them.
+    public const int WarmUp = 0;
+    public const int TrialsPerSession = 8;
     /// <summary>Faster than this after the signal is physically impossible: it was a guess.</summary>
     public const double AnticipationMs = 100;
 

@@ -67,7 +67,7 @@ public partial class ReactionPage : UserControl, IPage
         ModeText.Text = Loc.T(Modes.First(m => m.Mode == _mode).Text);
         ClearField();
         BigText.Text = Loc.T("Click to start");
-        SmallText.Text = Loc.F("{0} warm-up tries, then {1} that count.", ReactionTrainer.WarmUp, ReactionTrainer.TrialsPerSession);
+        SmallText.Text = Loc.F("{0} tries, about 20 seconds.", ReactionTrainer.TrialsPerSession);
         ProgressText.Text = "";
         Sides.Visibility = _mode == ReactionMode.Choice ? Visibility.Visible : Visibility.Collapsed;
         ShowHistory();
@@ -207,7 +207,7 @@ public partial class ReactionPage : UserControl, IPage
         BigText.Foreground = Brushes.White;
         (BigText.Text, SmallText.Text) = r switch
         {
-            TrialResult.Hit => (Loc.F("{0} ms", Math.Round(ms)), _trainer.InWarmUp || _trainer.Done <= ReactionTrainer.WarmUp ? Loc.T("Warm-up") : ""),
+            TrialResult.Hit => (Loc.F("{0} ms", Math.Round(ms)), ""),
             TrialResult.TooEarly => (Loc.T("Too early"), Loc.T("Wait for the signal: guessing doesn't train anything.")),
             TrialResult.WrongSide => (Loc.T("Wrong side"), ""),
             TrialResult.ClickedNoGo => (Loc.T("That was red"), Loc.T("Hold still on red.")),
@@ -215,7 +215,7 @@ public partial class ReactionPage : UserControl, IPage
             _ => (Loc.T("Missed"), ""),
         };
         if (r is TrialResult.TooEarly or TrialResult.WrongSide or TrialResult.ClickedNoGo or TrialResult.Missed) BigText.Foreground = NoGo;
-        Arm(r == TrialResult.Hit ? 750 : 1100);
+        Arm(r == TrialResult.Hit ? 600 : 1000);
     }
 
     void Finish()

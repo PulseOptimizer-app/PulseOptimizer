@@ -1944,5 +1944,6 @@
  "Measuring games and programs…": "Midiendo juegos y programas…",
  "Your file: goes to the Recycle Bin": "Tu archivo: va a la Papelera",
  "Program: opens its uninstaller": "Programa: abre su desinstalador",
- "Empties the Recycle Bin": "Vacía la Papelera"
+ "Empties the Recycle Bin": "Vacía la Papelera",
+ "{0} tries, about 20 seconds.": "{0} intentos, unos 20 segundos."
 }
