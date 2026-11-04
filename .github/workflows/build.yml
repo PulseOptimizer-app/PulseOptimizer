@@ -40,6 +40,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: ./tools/get-ffmpeg.ps1 -Zip dist/ffmpeg-win64.zip -HashOut src/PulseOptimizer/tools/ffmpeg.sha256
 
+      - name: TEMP list FFmpeg GPU filters
+        shell: pwsh
+        run: |
+          Expand-Archive dist/ffmpeg-win64.zip -DestinationPath ffcheck -Force
+          $ff = Get-ChildItem ffcheck -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          & $ff.FullName -hide_banner -version | Select-Object -First 1
+          & $ff.FullName -hide_banner -filters 2>&1 | Select-String -Pattern 'd3d11|amf|cuda|qsv|npp|vpp|hwmap|hwupload|ddagrab|gfxcapture|scale_'
+          & $ff.FullName -hide_banner -h filter=scale_d3d11 2>&1 | Select-Object -First 25
+          & $ff.FullName -hide_banner -h filter=vpp_amf 2>&1 | Select-Object -First 25
+          & $ff.FullName -hide_banner -h encoder=h264_amf 2>&1 | Select-String -Pattern 'pix_fmts|preanalysis|quality|usage|rc '
+
       - name: Get game cover art from Steam's store (embedded; the app never goes online)
         shell: pwsh
         run: python tools/get-game-art.py src/PulseOptimizer/Assets/Games
