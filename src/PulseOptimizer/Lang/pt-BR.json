@@ -1899,5 +1899,16 @@
  "A few stutters, nothing serious.": "Algumas travadas, nada sério.",
  "Occasional single skips are normal in most games.": "Pulos isolados de vez em quando são normais na maioria dos jogos.",
  "The game itself stutters.": "O próprio jogo trava.",
- "No background app lined up with the stutters. Lower texture quality if your graphics card's memory is full, update the graphics driver, and make sure the game is on an SSD.": "Nenhum app em segundo plano coincidiu com as travadas. Abaixe a qualidade de texturas se a memória da placa de vídeo estiver cheia, atualize o driver de vídeo e confira se o jogo está num SSD."
+ "No background app lined up with the stutters. Lower texture quality if your graphics card's memory is full, update the graphics driver, and make sure the game is on an SSD.": "Nenhum app em segundo plano coincidiu com as travadas. Abaixe a qualidade de texturas se a memória da placa de vídeo estiver cheia, atualize o driver de vídeo e confira se o jogo está num SSD.",
+ "Best upgrade for your money: ": "O melhor upgrade pelo seu dinheiro: ",
+ "A second, matching RAM stick": "Um segundo pente de RAM igual",
+ "Your memory runs on one channel. A second stick of the same size and speed doubles memory bandwidth, which often gives a big FPS boost in CPU-heavy games, for the price of one stick.": "Sua memória roda em um canal só. Um segundo pente do mesmo tamanho e velocidade dobra a largura de banda, o que costuma dar um grande ganho de FPS em jogos que exigem do processador, pelo preço de um pente.",
+ "More memory: 16 GB or more (you have {0} GB)": "Mais memória: 16 GB ou mais (você tem {0} GB)",
+ "Modern games and Discord or a browser in the background need more than you have. Running out causes stutters that no setting fixes. Buy a matching pair so it stays dual-channel.": "Jogos atuais com Discord ou um navegador em segundo plano precisam de mais do que você tem. Ficar sem memória causa travadas que nenhuma configuração resolve. Compre um par igual para continuar em dual-channel.",
+ "An SSD for your games": "Um SSD para os seus jogos",
+ "Some of your games are on a hard drive. An SSD loads maps much faster and removes the stutters that happen while a game streams in new areas.": "Alguns dos seus jogos estão num HD. Um SSD carrega os mapas muito mais rápido e tira as travadas que acontecem quando o jogo carrega áreas novas.",
+ "A high refresh rate monitor (144 Hz or more)": "Um monitor de alta taxa de atualização (144 Hz ou mais)",
+ "Your screen shows at most 60 to 75 frames a second, so any FPS above that is wasted. If your games already run above 60 FPS, a 144 Hz monitor is the biggest smoothness upgrade you can buy.": "Sua tela mostra no máximo de 60 a 75 quadros por segundo, então qualquer FPS acima disso é desperdiçado. Se seus jogos já passam de 60 FPS, um monitor de 144 Hz é o maior upgrade de fluidez que você pode comprar.",
+ "No clear upgrade needed": "Nenhum upgrade claro necessário",
+ "Nothing in the checkup points at one part holding your PC back. If a game runs slow, Measure shows whether the processor or the graphics card is the limit, and that's the part to upgrade.": "Nada no diagnóstico aponta uma peça segurando seu PC. Se um jogo estiver lento, Medir mostra se o limite é o processador ou a placa de vídeo, e essa é a peça para trocar."
 }

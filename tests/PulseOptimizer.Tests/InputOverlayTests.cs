@@ -130,3 +130,23 @@ public class StutterTests
         Assert.Contains("MsMpEng", verdict);
     }
 }
+
+public class UpgradeAdvisorTests
+{
+    static Pulse.Core.Finding F(string id, Pulse.Core.Severity s = Pulse.Core.Severity.Problem) => new() { Id = id, Title = "t", Detail = "d", Severity = s };
+
+    [Fact]
+    public void Single_channel_ram_is_the_first_pick()
+    {
+        var f = Pulse.Core.PcDiagnostics.UpgradeAdvice(new[] { F("ram-channels"), F("games-hdd") }, 8, 60);
+        Assert.Contains("RAM stick", f.Title);
+    }
+
+    [Fact]
+    public void Nothing_wrong_means_no_upgrade_is_pushed()
+    {
+        var f = Pulse.Core.PcDiagnostics.UpgradeAdvice(new[] { F("mon-ok:DISPLAY1", Pulse.Core.Severity.Ok) }, 32, 165);
+        Assert.Contains("No clear upgrade", f.Title);
+        Assert.Contains("monitor", Pulse.Core.PcDiagnostics.UpgradeAdvice(new Pulse.Core.Finding[0], 32, 60).Title);
+    }
+}
