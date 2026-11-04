@@ -98,3 +98,22 @@ public class ClipSoundTests
         Assert.NotEqual(wav.Length, shot.Length);                 // a different sound from the clip one
     }
 }
+
+public class LeftoverAppTests
+{
+    [Fact]
+    public void MissingUninstallerIsSpotted()
+    {
+        Assert.True(Pulse.Core.Declutter.DeclutterEngine.UninstallerMissing(@"""C:\Games\Gone Game 7Q2\unins000.exe"" /SILENT"));
+        Assert.True(Pulse.Core.Declutter.DeclutterEngine.UninstallerMissing(@"C:\Games\Gone Game 7Q2\unins000.exe"));
+    }
+
+    [Fact]
+    public void WindowsInstallerAndPathCommandsAreNotJudged()
+    {
+        Assert.False(Pulse.Core.Declutter.DeclutterEngine.UninstallerMissing("MsiExec.exe /X{12345678-1234-1234-1234-123456789012}"));
+        Assert.False(Pulse.Core.Declutter.DeclutterEngine.UninstallerMissing("rundll32.exe something"));
+        Assert.False(Pulse.Core.Declutter.DeclutterEngine.UninstallerMissing(""));
+        Assert.False(Pulse.Core.Declutter.DeclutterEngine.UninstallerMissing("steam://uninstall/730"));
+    }
+}
