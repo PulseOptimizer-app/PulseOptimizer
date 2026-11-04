@@ -35,6 +35,8 @@ public partial class MainWindow : Window
         LangLabel.Text = Ui.Loc.Current == "pt-BR" ? "PT" : Ui.Loc.Current.ToUpperInvariant();
         Loaded += OnLoaded;
         StartUpdateChecks();
+        VersionText.Text = Updater.CurrentVersion == "0.0.0" ? "dev" : Updater.CurrentVersion;
+        ClipsService.Changed += () => Dispatcher.InvokeAsync(ShowClipsPill);
         SourceInitialized += (_, _) => Native.StyleWindow(new WindowInteropHelper(this).Handle);
         StateChanged += (_, _) =>
         {
@@ -425,6 +427,15 @@ public partial class MainWindow : Window
         _quitting = true;
         Close();
     }
+
+    void ShowClipsPill()
+    {
+        bool rec = ClipsService.State == ClipsState.Recording;
+        ClipsPill.Visibility = rec ? Visibility.Visible : Visibility.Collapsed;
+        ClipsPillGame.Text = ClipsService.Game ?? Loc.T("Your screen");
+    }
+
+    void ClipsPill_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => Navigate("clips");
 
     // ───────── New version ─────────
 

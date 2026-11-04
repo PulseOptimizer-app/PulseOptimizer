@@ -1975,5 +1975,11 @@
  "Couldn't find Pulse's own file.": "Não foi possível encontrar o arquivo do Pulse.",
  "The new version doesn't list its checksum yet. Try again in a few minutes.": "A nova versão ainda não publicou o checksum. Tente de novo em alguns minutos.",
  "The download didn't match the release's checksum, so it wasn't installed.": "O download não bateu com o checksum da versão, então não foi instalado.",
- "The update couldn't be downloaded: ": "Não foi possível baixar a atualização: "
+ "The update couldn't be downloaded: ": "Não foi possível baixar a atualização: ",
+ "Clips is recording": "O Clips está gravando",
+ "Clips is off · it uses nothing until you turn it on": "O Clips está desligado · não usa nada até você ligar",
+ "Clips is waiting for a game · it uses nothing until then": "O Clips está esperando um jogo · não usa nada até lá",
+ "Your screen": "Sua tela",
+ "Clips is using {0}% CPU and {1}": "O Clips está usando {0}% de CPU e {1}",
+ "Big win": "Grande ganho"
 }
