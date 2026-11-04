@@ -93,5 +93,8 @@ public class ClipSoundTests
         Assert.InRange(seconds, 0.5, 0.8);
         short last = BitConverter.ToInt16(wav, wav.Length - 2);
         Assert.InRange(Math.Abs((int)last), 0, 50);             // fades out: no click at the end
+        var shot = Pulse.Ui.Feedback.Shutter();
+        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(shot, 0, 4));
+        Assert.NotEqual(wav.Length, shot.Length);                 // a different sound from the clip one
     }
 }
