@@ -1961,5 +1961,19 @@
  "That's a lot for a PC with {0} GB. A shorter replay or Light quality keeps games from running short on memory.": "É muito para um PC com {0} GB. Um replay mais curto ou a qualidade Leve evita que os jogos fiquem sem memória.",
  "Delete this clip": "Excluir este clipe",
  "{0} ({1})": "{0} ({1})",
- "{0} · {1} FPS · {2} Mbps": "{0} · {1} FPS · {2} Mbps"
+ "{0} · {1} FPS · {2} Mbps": "{0} · {1} FPS · {2} Mbps",
+ "Pulse {0} is out": "O Pulse {0} saiu",
+ "You have {0}. Your settings and clips stay as they are, and Pulse restarts by itself.": "Você tem a {0}. Suas configurações e clipes continuam iguais, e o Pulse reinicia sozinho.",
+ "Your settings and clips stay as they are. Pulse restarts by itself in a few seconds.": "Suas configurações e clipes continuam iguais. O Pulse reinicia sozinho em alguns segundos.",
+ "Install now": "Instalar agora",
+ "Later": "Depois",
+ "Skip this version": "Pular esta versão",
+ "Downloading the update…": "Baixando a atualização…",
+ "Restarting into the new version…": "Reiniciando na nova versão…",
+ "Try again": "Tentar de novo",
+ "Cancelled.": "Cancelado.",
+ "Couldn't find Pulse's own file.": "Não foi possível encontrar o arquivo do Pulse.",
+ "The new version doesn't list its checksum yet. Try again in a few minutes.": "A nova versão ainda não publicou o checksum. Tente de novo em alguns minutos.",
+ "The download didn't match the release's checksum, so it wasn't installed.": "O download não bateu com o checksum da versão, então não foi instalado.",
+ "The update couldn't be downloaded: ": "Não foi possível baixar a atualização: "
 }
