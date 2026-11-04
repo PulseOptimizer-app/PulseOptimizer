@@ -28,14 +28,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="Row" TargetType="Grid">
-            <Setter Property="Margin" Value="0,0,0,14"/>
-        </Style>
-        <Style x:Key="RowLabel" TargetType="TextBlock" BasedOn="{StaticResource Body}">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="0,0,16,0"/>
-        </Style>
     </UserControl.Resources>
     <Grid>
         <ScrollViewer x:Name="Scroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
