@@ -51,6 +51,7 @@ public static class ClipsService
     public static bool OnDisk => _rec?.OnDisk == true;
     // How far Pulse stepped down the video path after one gave no picture (see ReplayRecorder.VideoLevel).
     static int _videoLevel;
+    static int _giveUps;
     public static double BufferSeconds => _rec?.BufferSeconds ?? 0;
     /// <summary>FFmpeg's share of all CPU time since the last call (0..100).</summary>
     public static double CpuPercent
@@ -103,6 +104,7 @@ public static class ClipsService
         _stalls = 0;
         _screenOnly = IntPtr.Zero;
         _videoLevel = 0;
+        _giveUps = 0;
         _retryAfter = default;
         RegisterHotkey();
         Tick();
@@ -202,7 +204,9 @@ public static class ClipsService
             {
                 Set(ClipsState.Problem, "Windows stopped giving Pulse the game's picture. Set the game to borderless or windowed fullscreen in its video settings, then turn Clips off and on.");
                 _stalls = 0;
-                _retryAfter = DateTime.Now.AddSeconds(30);
+                // Each restart makes the game hitch for a moment, so give up for longer each time instead of every 30 s.
+                _giveUps++;
+                _retryAfter = DateTime.Now.AddSeconds(Math.Min(30 * (1 << Math.Min(_giveUps - 1, 5)), 600));
                 return;
             }
         }
