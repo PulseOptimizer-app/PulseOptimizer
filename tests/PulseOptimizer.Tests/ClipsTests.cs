@@ -510,11 +510,42 @@ public class ReplayStoreTests
     {
         var s = new Pulse.Core.Clips.ClipSettings { Resolution = "native" };
         var e = new Pulse.Core.Clips.Encoder("h264_nvenc", "h264", "NVIDIA", true);
-        var fast = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null);
-        var safe = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null, videoLevel: 1);
-        var small = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null, videoLevel: 2);
-        Assert.Contains("null[v]", fast);
+        var gpu = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null);
+        var direct = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null, videoLevel: 1);
+        var safe = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null, videoLevel: 2);
+        var small = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null, videoLevel: 3);
+        Assert.Contains("scale_d3d11=format=nv12", gpu);
+        Assert.DoesNotContain("hwdownload", gpu); // nothing goes through the processor
+        Assert.Contains("null[v]", direct);
         Assert.Contains("trunc(iw/2)*2", safe);
         Assert.Contains("scale=-2:1080", small);
     }
+
+    [Fact]
+    public void A_pc_that_cant_keep_up_records_smaller_on_the_graphics_card()
+    {
+        var s = new Pulse.Core.Clips.ClipSettings { Resolution = "native", Fps = 60, FitHeight = 720, FitFps = 30 };
+        var e = new Pulse.Core.Clips.Encoder("h264_amf", "h264", "AMD", true);
+        var a = Pulse.Core.Clips.ReplayRecorder.Arguments(s, e, null, null);
+        Assert.Contains("scale_d3d11=width=-2:height=720:format=nv12", a);
+        Assert.Contains("framerate=30", a);
+    }
+
+    [Fact]
+    public void Frame_rate_is_measured_over_the_last_seconds()
+    {
+        var m = new Pulse.Core.Clips.FrameRateMeter();
+        for (int t = 0; t <= 20; t++) m.Add(t, t < 10 ? t * 60 : 600 + (t - 10) * 20); // 60 FPS, then only 20
+        Assert.Equal(20, m.Rate(20, 10)!.Value, 1);
+        Assert.Null(new Pulse.Core.Clips.FrameRateMeter().Rate(5, 10));
+    }
+
+    [Theory]
+    [InlineData("frame=120", false)]
+    [InlineData("speed=1.01x", true)]
+    [InlineData("progress=continue", true)]
+    [InlineData("stream_0_0_q=23.0", true)]
+    [InlineData("[h264_amf @ 0x1] Encoder error", false)]
+    public void Progress_lines_stay_out_of_the_error_log(string line, bool progress) =>
+        Assert.Equal(progress, Pulse.Core.Clips.ReplayRecorder.IsProgressLine(line));
 }
