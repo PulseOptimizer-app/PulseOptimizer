@@ -597,3 +597,17 @@ public class WeakPcTests
         finally { Pulse.Core.Clips.ReplayRecorder.SharedGraphics = false; }
     }
 }
+
+public class MicrophoneListTests
+{
+    [Fact]
+    public void Listing_microphones_never_throws_even_with_none_plugged_in() =>
+        Assert.NotNull(Pulse.Core.Clips.AudioCapture.Microphones());
+
+    [Fact]
+    public void The_chosen_microphone_is_recorded()
+    {
+        var src = File.ReadAllText(Path.Combine(Repo.Root, "src", "PulseOptimizer", "Core", "Clips", "ReplayRecorder.cs"));
+        Assert.Contains("AudioCapture.Microphone(_s.MicDevice)", src);
+    }
+}

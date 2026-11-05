@@ -140,7 +140,7 @@ public sealed class ReplayRecorder : IDisposable
         }
         if (_s.Microphone)
         {
-            _mic = AudioCapture.Microphone();
+            _mic = AudioCapture.Microphone(_s.MicDevice);
             _mic.Volume = _s.MicVolume / 100f;
             _mic.Start();
             micPipe = new NamedPipeServerStream(id + "-mic", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 1 << 16);

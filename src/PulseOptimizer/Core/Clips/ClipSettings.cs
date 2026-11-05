@@ -30,6 +30,8 @@ public class ClipSettings
     public int GameVolume { get; set; } = 100;
     public bool Microphone { get; set; }
     public int MicVolume { get; set; } = 100;
+    /// <summary>Which microphone to record (Windows' device id); "" = whatever Windows uses as the default.</summary>
+    public string MicDevice { get; set; } = "";
     /// <summary>Also put the microphone on its own second audio track (for editing). The first track is always the mix.</summary>
     public bool SeparateMicTrack { get; set; }
     /// <summary>Moves the sound against the picture, in milliseconds (positive = sound later), if a PC's clips are out of sync.</summary>
