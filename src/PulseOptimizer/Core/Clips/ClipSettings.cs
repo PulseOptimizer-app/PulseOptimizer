@@ -94,6 +94,7 @@ public class ClipSettings
     public int FitFps { get; set; }
     /// <summary>The light start for PCs with integrated graphics (720p, 30 FPS) has been set once.</summary>
     public bool WeakPcStartApplied { get; set; }
+    public bool FitResetDone { get; set; }
 
     /// <summary>
     /// The bitrate actually used: the chosen one, capped for the smaller size or frame rate Pulse lowered to (a 720p
