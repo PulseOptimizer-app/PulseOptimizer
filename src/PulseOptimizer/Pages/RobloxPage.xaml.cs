@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Pulse.Core;
 using Pulse.Core.Roblox;
+using Loc = Pulse.Ui.Loc;
 
 namespace Pulse.Pages;
 
