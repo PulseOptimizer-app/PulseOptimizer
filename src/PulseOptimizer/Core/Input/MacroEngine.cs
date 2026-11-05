@@ -472,10 +472,10 @@ public sealed class MacroRecorder : IDisposable
     /// or "none" (as fast as possible).
     /// </summary>
     public static List<MacroStep> ToSteps(List<(double T, int Vk, bool Down, int Scroll)> events, bool dropLastLeftClick = false,
-        string delays = "recorded", double fixedMs = 50, bool mouse = true)
+        string delays = "recorded", double fixedMs = 50, bool includeMouse = true)
     {
         var ev = events.ToList();
-        if (!mouse) { ev = ev.Where(e => e.Scroll == 0 && !Keys.IsMouse(e.Vk)).ToList(); dropLastLeftClick = false; }
+        if (!includeMouse) { ev = ev.Where(e => e.Scroll == 0 && !Keys.IsMouse(e.Vk)).ToList(); dropLastLeftClick = false; }
         if (dropLastLeftClick)
         {
             int up = ev.FindLastIndex(e => e.Vk == Keys.VK_LBUTTON && !e.Down);
