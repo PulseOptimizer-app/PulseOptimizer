@@ -137,7 +137,7 @@ public class LuaTests
     {
         var log = new List<string>();
         Run("local ok, err = pcall(function() error('boom') end) print(ok, err)", log);
-        Assert.Equal("false\tboom", log[0]);
+        Assert.Equal("false\tline 1: boom", log[0]);
     }
 
     [Fact]

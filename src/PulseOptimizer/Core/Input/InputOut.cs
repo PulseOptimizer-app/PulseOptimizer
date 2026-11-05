@@ -78,13 +78,17 @@ public static class Keys
     /// <summary>The virtual-key code G Hub's name stands for, or -1.</summary>
     public static int VkOfName(string s) => s != null && Named.TryGetValue(s, out var vk) ? vk : -1;
 
+    /// <summary>Keys that share a scancode with a number-pad key and are told apart by the "extended" flag.</summary>
+    static readonly HashSet<int> Extended = new() { 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x2C, 0x2D, 0x2E, 0x5B, 0x5C, 0x5D, 0x6F, 0xA3, 0xA5, 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2, 0xB3 };
+
     /// <summary>Scancode for a virtual-key code (0x100 bit = extended key).</summary>
     public static int ScanOfVk(int vk)
     {
         if (!OperatingSystem.IsWindows()) return vk;
         uint r = MapVirtualKeyW((uint)vk, 4 /* MAPVK_VK_TO_VSC_EX */);
         if (r == 0) return 0;
-        return (r & 0xFF00) is 0xE000 or 0xE100 ? 0x100 | (int)(r & 0xFF) : (int)(r & 0xFF);
+        bool ext = (r & 0xFF00) is 0xE000 or 0xE100 || Extended.Contains(vk);
+        return ext ? 0x100 | (int)(r & 0xFF) : (int)(r & 0xFF);
     }
 
     /// <summary>A key or mouse button as people call it.</summary>

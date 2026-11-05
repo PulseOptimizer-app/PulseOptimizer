@@ -179,7 +179,7 @@ public sealed class LuaInterpreter
                 break;
             }
             case WhileS w:
-                try { while (Truthy(Eval(w.Cond, sc))) ExecBlock(w.Body, sc); }
+                try { while (Truthy(Eval(w.Cond, sc))) { CheckStop(); ExecBlock(w.Body, sc); } }
                 catch (BreakSignal) { }
                 break;
             case RepeatS r:
@@ -187,6 +187,7 @@ public sealed class LuaInterpreter
                 {
                     while (true)
                     {
+                        CheckStop();
                         // "until" sees the body's locals
                         var inner = new Scope(sc);
                         foreach (var st in r.Body) Exec(st, inner);
@@ -205,6 +206,7 @@ public sealed class LuaInterpreter
                 {
                     for (double v = start; step > 0 ? v <= stop : v >= stop; v += step)
                     {
+                        CheckStop();
                         var inner = new Scope(sc);
                         inner.Declare(n.Var, v);
                         foreach (var st in n.Body) Exec(st, inner);
@@ -221,6 +223,7 @@ public sealed class LuaInterpreter
                 {
                     while (true)
                     {
+                        CheckStop();
                         var res = CallValue(f, new[] { state, control }, g.Line);
                         var first = res.Length > 0 ? res[0] : null;
                         if (first == null) break;
@@ -294,7 +297,7 @@ public sealed class LuaInterpreter
         if (fn is LuaFunction f)
         {
             try { return f.Call(this, args); }
-            catch (LuaException ex) when (ex.Line == 0 && fn is Builtin b) { throw new LuaException($"{b.Name}: {ex.Message}", line); }
+            catch (LuaException ex) when (ex.Line == 0 && fn is Builtin b) { throw new LuaException(b.Name == "error" ? ex.Message : $"{b.Name}: {ex.Message}", line); }
         }
         string name = what is NameE n ? $" '{n.Name}'" : what is IndexE { Key: StrE k } ? $" '{k.Value}'" : "";
         throw new LuaException($"attempt to call{name} (a {TypeName(fn)} value)", line);

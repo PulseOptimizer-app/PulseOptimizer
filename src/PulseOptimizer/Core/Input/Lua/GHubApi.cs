@@ -40,12 +40,12 @@ public static class GHubApi
             double ms = a.Length > 0 ? LuaInterpreter.TryNum(a[0]) ?? 0 : 0;
             vm.CheckStop();
             // In pieces, so Esc / turning the macro off stops a long Sleep at once.
-            var sw = Stopwatch.StartNew();
-            while (true)
+            double left = ms;
+            while (left > 0)
             {
-                double left = ms - sw.Elapsed.TotalMilliseconds;
-                if (left <= 0) break;
-                io.Sleep(Math.Min(left, 25));
+                double piece = Math.Min(left, 25);
+                io.Sleep(piece);
+                left -= piece;
                 vm.CheckStop();
             }
             return none;
