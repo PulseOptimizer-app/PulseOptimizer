@@ -2108,5 +2108,6 @@
  "Fast, short presses with uneven gaps, like tensed-arm jitter clicking.": "Toques rápidos e curtos com pausas irregulares, como o jitter clicking com o braço tenso.",
  "Replays the clicking you recorded on the test pad, gap for gap.": "Repete os cliques que você gravou na área de teste, pausa por pausa.",
  "Record your clicking on the test pad first (5 seconds), then this replays it gap for gap.": "Grave seus cliques na área de teste primeiro (5 segundos) e isto os repete pausa por pausa.",
- "Evenly spaced clicks at the speed you pick.": "Cliques com espaço igual na velocidade que você escolher."
+ "Evenly spaced clicks at the speed you pick.": "Cliques com espaço igual na velocidade que você escolher.",
+ "{0} CPS": "{0} CPS"
 }
