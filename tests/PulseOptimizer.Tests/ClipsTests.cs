@@ -584,7 +584,7 @@ public class RecorderNeverWaitsTests
         var csproj = File.ReadAllText(Path.Combine(Repo.Root, "src", "PulseOptimizer", "PulseOptimizer.csproj"));
         Assert.DoesNotContain("ConserveMemory", csproj);  // forced extra compacting collections
         var main = File.ReadAllText(Path.Combine(Repo.Root, "src", "PulseOptimizer", "MainWindow.xaml.cs"));
-        Assert.Contains("if (ClipsService.State != ClipsState.Recording)", main);
+        Assert.Contains("ClipsService.State != ClipsState.Recording ? Native.GiveBackMemory : Native.GiveBackMemoryGently", main); // the pausing clean-up never runs while recording
     }
 }
 
